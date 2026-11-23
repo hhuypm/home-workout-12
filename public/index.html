@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home Workout 12 tuần</title>
+<meta name="description" content="Theo dõi lộ trình home workout 12 tuần: set strength, incline walk, Mini Circuit, level từng bài và chỉ số cơ thể.">
+<meta name="theme-color" content="#F2F2F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout 12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/inter-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app">
+  <section class="view on" id="v-today"></section>
+
+  <section class="view" id="v-week">
+    <header class="vhead"><div><div class="dl" id="weekSub"></div><h1>Lịch tuần</h1></div></header>
+    <div class="days" id="days"></div>
+  </section>
+
+  <section class="view" id="v-road">
+    <header class="vhead"><div><div class="dl" id="roadSub"></div><h1>12 tuần · 6 chặng</h1></div></header>
+    <p class="sub" style="margin:-6px 4px 18px;line-height:1.5">Strength session 40–60 phút, incline walk 2,5–3 giờ mỗi tuần khi vào guồng. Tuần 5 &amp; 10 là deload.</p>
+    <ol class="tl" id="phases"></ol>
+  </section>
+
+  <section class="view" id="v-prog">
+    <header class="vhead"><div><div class="dl" id="progSub"></div><h1>Tiến độ</h1></div></header>
+    <div class="stats" id="stats"></div>
+    <div class="card" style="margin-top:12px" id="goals"></div>
+    <div class="card" style="margin-top:12px" id="lvCard"></div>
+    <div class="pgrid">
+      <div class="card" style="margin-top:12px">
+        <h3 class="ct">Từng tuần</h3>
+        <p class="cs">Chấm: strength session xong. Thanh: phút incline walk so với target. Số cuối: số ngày làm Mini Circuit.</p>
+        <div id="wrows"></div>
+      </div>
+      <div>
+        <div class="card" style="margin-top:12px">
+          <h3 class="ct">Max Test</h3>
+          <p class="cs">Test max reps tuần 1, test lại cuối tuần 12.</p>
+          <table><thead><tr><th>Bài</th><th class="n">Tuần 1</th><th class="n">Tuần 12</th><th class="n">+/−</th></tr></thead><tbody id="tests"></tbody></table>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <h3 class="ct">Cân nặng &amp; vòng eo</h3>
+          <p class="cs">Đo sáng Chủ nhật, trước khi ăn.</p>
+          <form class="form" id="bodyForm">
+            <label class="full">Ngày<input type="date" id="bDate"></label>
+            <label>Cân nặng (kg)<input type="number" step="0.1" id="bKg" inputmode="decimal" placeholder="–"></label>
+            <label>Vòng eo (cm)<input type="number" step="0.1" id="bWaist" inputmode="decimal" placeholder="–"></label>
+            <button class="save press" type="submit">Lưu lần đo</button>
+          </form>
+          <div class="chart" id="chartBox"><svg id="chart" aria-label="Biểu đồ cân nặng"></svg></div>
+          <table><tbody id="bodyRows"></tbody></table>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px" id="dataCard">
+      <h3 class="ct">Dữ liệu &amp; sao lưu</h3>
+      <p class="cs">Dữ liệu chỉ lưu trên máy này. Xuất file sao lưu mỗi tuần để không mất tiến độ khi đổi máy hoặc xoá trình duyệt.</p>
+      <div class="dbtns">
+        <button class="dbtn2 press" data-data="export" type="button"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>Xuất sao lưu</button>
+        <button class="dbtn2 press" data-data="import" type="button"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14"/></svg>Khôi phục</button>
+        <button class="dbtn2 danger press" data-data="wipe" type="button">Xoá toàn bộ dữ liệu</button>
+      </div>
+      <input type="file" id="impFile" accept="application/json,.json" hidden>
+      <p class="dmsg" id="dmsg" role="status"></p>
+      <p class="offl" id="offline" role="status" hidden></p>
+      <div id="install"></div>
+    </div>
+    <p class="foot">Home Workout 12 tuần · lộ trình tham khảo chung, không phải tư vấn y tế.</p>
+  </section>
+</div>
+
+<nav class="tabs" role="tablist" aria-label="Điều hướng">
+  <button data-v="today" role="tab" aria-selected="true"></button>
+  <button data-v="week" role="tab" aria-selected="false"></button>
+  <button data-v="road" role="tab" aria-selected="false"></button>
+  <button data-v="prog" role="tab" aria-selected="false"></button>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+<div class="sheet" id="sheet"></div>
+<div id="pl" role="dialog" aria-modal="true" aria-label="Chế độ tập"></div>
+
+<script src="vendor/gsap.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
