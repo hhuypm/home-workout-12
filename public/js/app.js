@@ -4,6 +4,7 @@ import * as L from "./logic.js";
 import { fmt, iso, addD, dateOf, mmss, incl, effS, phaseOf, lvName } from "./logic.js";
 import * as store from "./store.js";
 import { ic, arc, miniRing } from "./icons.js";
+import * as N from "./notify.js";
 
 let st = store.load();
 const save = () => store.save(st);
@@ -205,12 +206,26 @@ const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e)
 
 /* One countdown at a time, driven by wall-clock so it stays right when the tab sleeps. */
 let T = null;
-function startT(sec, onEnd, onTick) { T = { dur: sec, end: Date.now() + sec * 1000, paused: false, left: sec, onEnd, onTick, lb: null }; onTick && onTick(sec); }
+function startT(sec, onEnd, onTick, note) { T = { dur: sec, end: Date.now() + sec * 1000, paused: false, left: sec, onEnd, onTick, lb: null, note: note || null }; onTick && onTick(sec); syncNotify(); }
+
+/* Keep the service worker's "time is up" alarm in step with the running timer (start, pause, ±15s, stop). */
+let armed = null;
+function syncNotify() {
+  const want = T && !T.paused && T.note && N.enabled() ? T.end : null;
+  if (want === armed) return;
+  armed = want;
+  if (want) N.schedule(want, T.note); else N.cancel();
+}
 setInterval(() => {
+  syncNotify();
   if (!T || T.paused) return;
   const left = Math.ceil((T.end - Date.now()) / 1000);
   if (left <= 3 && left > 0 && left !== T.lb) { T.lb = left; beep(700, .09); }
-  if (left <= 0) { const f = T.onEnd; T = null; beep(990, .45); buzz([200, 80, 200]); f && f(); return; }
+  if (left <= 0) {
+    const f = T.onEnd, note = T.note; T = null; beep(990, .45); buzz([200, 80, 200]);
+    if (note && document.hidden && N.enabled()) N.show(note);   /* app in the background: tell the user */
+    f && f(); return;
+  }
   if (left !== T.left) { T.left = left; T.onTick && T.onTick(left); }
 }, 150);
 const togglePause = () => { if (!T.paused) { T.paused = true; T.rem = T.end - Date.now(); } else { T.paused = false; T.end = Date.now() + T.rem; } return T.paused; };
@@ -234,7 +249,16 @@ async function keepAwake(on) {
 }
 const dayIdx = key => WEEK.findIndex((_, i) => iso(dateOf(P.w, i)) === key);
 
+/* First time the user starts a workout (a tap): offer notifications for the timers. Later: Tiến độ → Thông báo. */
+function offerNotify() {
+  try {
+    if (N.permission() !== "default" || !N.wanted() || localStorage.getItem("player12-asked")) return;
+    localStorage.setItem("player12-asked", "1");
+  } catch (e) { return; }
+  N.ask().then(renderNotify);
+}
 function openPlay(kind) {
+  offerNotify();
   const d = dayInfo(selW, selI), sp = steps(kind, d.k, selW), sv = setsOf(kind, d.key);
   let idx = sp.findIndex(x => x.q >= (sv[x.j] || 0));
   if (idx < 0) { Object.keys(sv).forEach(k => delete sv[k]); idx = 0; save(); }
@@ -242,6 +266,7 @@ function openPlay(kind) {
   beep(440, .01, .001); openShell(); showWork();
 }
 function openWalk() {
+  offerNotify();
   const d = dayInfo(selW, selI), target = Math.max(5, d.wt - d.wm);
   P = { kind: "walk", key: d.key, c: "var(--walk)", t0: Date.now(), title: "Incline Walk", target, w: selW };
   beep(440, .01, .001); openShell(); showWalk();
@@ -299,7 +324,8 @@ function showRest(sec, prev) {
  <div class="ctrl an"><button class="cb press" data-pa="m15" aria-label="Bớt 15 giây">−15</button><div class="cbl"><button class="cb main press" data-pa="pause" id="pz" aria-label="Tạm dừng">${ic("pause")}</button><span id="pzl">Tạm dừng</span></div><button class="cb press" data-pa="p15" aria-label="Thêm 15 giây">+15</button></div></div>
  <div class="pfoot">${nextCard(P.idx)}<button class="pbig press an" data-pa="go">Vào set luôn${ic("skip")}</button></div>`;
   $("rl").textContent = "rest";
-  startT(sec, () => showWork(), l => setRing(l, T ? T.dur : sec, l === sec));
+  const nx = P.sp[P.idx], nxe = nx && P.ex[nx.j];
+  startT(sec, () => showWork(), l => setRing(l, T ? T.dur : sec, l === sec), N.textFor("rest", { next: nxe && nxe.n, q: nx && nx.q, n: nx && nx.n }));
   anim();
   if (G()) gsap.from("#ringw .ring", { scale: .88, duration: .6, ease: "back.out(1.6)", clearProps: "transform" });
 }
@@ -364,7 +390,7 @@ pl.addEventListener("click", e => {
   if (a === "wtime") {
     const e2 = P.ex[P.sp[P.idx].j];
     b.innerHTML = ic("timer") + "Đang đếm";
-    startT(e2.dur, () => { const w = $("wt"); if (w) w.textContent = "Xong!"; b.innerHTML = ic("play") + "Đếm lại"; }, l => { const w = $("wt"); if (w) w.textContent = mmss(l); });
+    startT(e2.dur, () => { const w = $("wt"); if (w) w.textContent = "Xong!"; b.innerHTML = ic("play") + "Đếm lại"; }, l => { const w = $("wt"); if (w) w.textContent = mmss(l); }, N.textFor("hold", { name: e2.n }));
     return;
   }
   if (a === "emom") {
@@ -375,7 +401,7 @@ pl.addEventListener("click", e => {
       if (mi !== lastMin) { lastMin = mi; beep(880, .25); buzz(150); }
       setRing(inMin, 60, inMin === 60);
       const lb = $("rl"); if (lb) lb.textContent = `Minute ${Math.min(mi, e2.emom)}/${e2.emom} · ${mi % 2 ? "Pull-Up" : "Dip"}`;
-    });
+    }, N.textFor("emom"));
     return;
   }
   if (a === "towalk") {
@@ -390,7 +416,7 @@ pl.addEventListener("click", e => {
         P.left = 0; st.walk[P.key] = (+st.walk[P.key] || 0) + P.target; save(); P.started = false;
         $("rl").textContent = "Đủ mục tiêu!";
         const w = $("ws"); if (w) { w.innerHTML = ic("check") + "Xong"; w.dataset.pa = "close"; }
-      }, l => setRing(l, P.target * 60, l === P.target * 60));
+      }, l => setRing(l, P.target * 60, l === P.target * 60), N.textFor("walk", { target: P.target }));
       setPauseUI(b, false);
     } else if (T) setPauseUI(b, togglePause());
     return;
@@ -456,6 +482,9 @@ function dataAction(a) {
     return msg("Đã xuất file sao lưu. Giữ file này ở nơi an toàn (Drive, Zalo, email…).", "ok");
   }
   if (a === "import") return $("impFile").click();
+  if (a === "notif-ask") return N.ask().then(renderNotify);
+  if (a === "notif-toggle") { N.setWanted(!N.wanted()); N.cancel(); return renderNotify(); }
+  if (a === "notif-test") return N.show({ title: "Thông báo hoạt động", body: "Khi hết giờ rest, bạn sẽ thấy thông báo như thế này." }).then(ok => msg(ok ? "Đã gửi thông báo thử." : "Không gửi được thông báo thử. Kiểm tra quyền thông báo của app.", ok ? "ok" : "err"));
   if (a === "wipe") return confirmSheet("Xoá toàn bộ dữ liệu?", "Mọi set, phút walk, level, Max Test và lần đo trên máy này sẽ mất. Nên xuất file sao lưu trước.", "Xoá hết").then(ok => { if (!ok) return; st = store.blank(); save(); renderAll(); msg("Đã xoá toàn bộ dữ liệu.", "ok"); });
 }
 async function importFile(f) {
@@ -464,6 +493,22 @@ async function importFile(f) {
   $("impFile").value = "";
   if (!store.isEmpty(st) && !await confirmSheet("Thay dữ liệu hiện tại?", "Dữ liệu đang có trên máy này sẽ được thay bằng nội dung file sao lưu.", "Thay thế")) return;
   st = next; save(); renderAll(); msg("Đã khôi phục dữ liệu từ file.", "ok");
+}
+
+/* ================= notifications setting ================= */
+function renderNotify() {
+  const el = $("notify"), perm = N.permission();
+  const head = `<h4>Thông báo hết giờ</h4>`;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  let body;
+  if (perm === "unsupported") body = `<p class="hint">${ios ? "Trên iPhone, thông báo chỉ hoạt động khi app đã cài lên màn hình chính: mở bằng Safari, bấm Chia sẻ, chọn “Thêm vào MH chính”, rồi mở app từ icon vừa tạo." : "Trình duyệt này không hỗ trợ thông báo."}</p>`;
+  else if (perm === "denied") body = `<p class="hint">Thông báo đang bị chặn cho trang này. Bật lại trong cài đặt của trình duyệt hoặc của điện thoại (mục Thông báo), rồi mở lại app.</p>`;
+  else if (perm === "default") body = `<p class="hint">Nhắc bằng thông báo khi rest, đếm giây, EMOM hoặc walk kết thúc mà bạn đang ở app khác hoặc khoá màn hình.</p><div class="dbtns"><button class="dbtn2 press" data-data="notif-ask" type="button" style="grid-column:1/-1">Bật thông báo</button></div>`;
+  else {
+    const on = N.wanted();
+    body = `<p class="hint">${on ? "Đang bật. Khi hết giờ mà app không hiện trên màn hình, bạn sẽ nhận thông báo." : "Đang tắt."} Rest được hẹn giờ cả khi máy tạm dừng app. Walk và EMOM dài thì nên giữ app mở: màn hình tự sáng khi đang tập.</p><div class="dbtns"><button class="dbtn2 press${on ? " on" : ""}" data-data="notif-toggle" type="button" aria-pressed="${on}">${on ? "Đang bật" : "Đang tắt"}</button><button class="dbtn2 press" data-data="notif-test" type="button">Gửi thử</button></div>`;
+  }
+  el.innerHTML = head + body;
 }
 
 /* ================= tabs ================= */
@@ -521,6 +566,7 @@ try { navigator.storage?.persist?.(); } catch (e) {}
 /* Coming back to the app: re-take the wake lock, and move to the new day after midnight. */
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
+  N.clear();
   if (P) return void keepAwake(true);
   const p = L.position(new Date());
   if (iso(p.today) === iso(today)) return;
@@ -532,7 +578,7 @@ document.addEventListener("visibilitychange", () => {
 /* ================= boot ================= */
 $("bDate").value = iso(dNow === 6 ? today : addD(today, 6 - dNow));
 try { new ResizeObserver(drawChart).observe($("chartBox")); } catch (e) {}
-renderAll(); renderInstall();
+renderAll(); renderInstall(); renderNotify();
 const h0 = location.hash.slice(1);
 if (VIEWS.includes(h0) && h0 !== "today") show(h0);
 addEventListener("hashchange", () => { const v = location.hash.slice(1); if (VIEWS.includes(v)) show(v); });

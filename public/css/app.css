@@ -409,3 +409,7 @@ details.lvi summary::-webkit-details-marker{display:none}
 .offl{display:flex;align-items:center;gap:8px;margin:12px 0 0;font-size:13.5px;font-weight:600;color:var(--legs);line-height:1.4}
 .offl[hidden]{display:none}
 .offl .ic{width:18px;height:18px}
+.notif{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.notif h4{margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em}
+.notif .dbtns{margin-top:12px}
+.notif .dbtn2.on{background:color-mix(in srgb,var(--legs) 16%,transparent);color:var(--legs)}
