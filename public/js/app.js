@@ -5,6 +5,7 @@ import { fmt, iso, addD, dateOf, mmss, incl, effS, phaseOf, lvName } from "./log
 import * as store from "./store.js";
 import { ic, arc, miniRing } from "./icons.js";
 import * as N from "./notify.js";
+import * as A from "./audio.js";
 
 let st = store.load();
 const save = () => store.save(st);
@@ -191,21 +192,15 @@ function drawChart() {
 const renderAll = () => { renderToday(); renderWeek(); renderRoad(); renderProg(); };
 
 /* ================= sound + timer ================= */
-let AC = null;
-function beep(f, d, v) {
-  if (!N.soundOn()) return;
-  try {
-    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-    if (AC.state === "suspended") AC.resume();
-    const o = AC.createOscillator(), g = AC.createGain();
-    o.frequency.value = f; o.connect(g); g.connect(AC.destination);
-    g.gain.setValueAtTime(v ?? .3, AC.currentTime); g.gain.exponentialRampToValueAtTime(.001, AC.currentTime + d);
-    o.start(); o.stop(AC.currentTime + d);
-  } catch (e) {}
-}
+/* Short tones (countdown ticks, set done). The loud time-is-up chime is A.chime(). */
+function beep(f, d, v) { if (N.soundOn()) A.tone(f, d, Math.min(1, (v ?? .3) * 2)); }
 const buzz = p => { if (!N.vibOn()) return; try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
-/* Timer finished: three rising notes and a long double buzz. */
-function chime() { beep(988, .18, .45); setTimeout(() => beep(1319, .18, .45), 200); setTimeout(() => beep(1568, .5, .45), 400); buzz(N.RING); }
+/* Timer finished: loud rising chime (twice), long buzz, and a screen flash that works even with the sound off. */
+function chime() {
+  if (N.soundOn()) A.chime();
+  buzz(N.RING);
+  pl.classList.remove("flash"); void pl.offsetWidth; pl.classList.add("flash");
+}
 
 /* One countdown at a time, driven by wall-clock so it stays right when the tab sleeps. */
 let T = null;
@@ -266,13 +261,13 @@ function openPlay(kind) {
   let idx = sp.findIndex(x => x.q >= (sv[x.j] || 0));
   if (idx < 0) { Object.keys(sv).forEach(k => delete sv[k]); idx = 0; save(); }
   P = { kind, k: d.k, w: selW, key: d.key, sp, idx, ex: exFor(kind, d.k), c: kind === "mini" ? "var(--mini)" : S[d.k].c, t0: Date.now(), title: kind === "mini" ? "Mini Circuit" : S[d.k].full };
-  beep(440, .01, .001); openShell(); showWork();
+  A.wake(); openShell(); showWork();
 }
 function openWalk() {
   offerNotify();
   const d = dayInfo(selW, selI), target = Math.max(5, d.wt - d.wm);
   P = { kind: "walk", key: d.key, c: "var(--walk)", t0: Date.now(), title: "Incline Walk", target, w: selW };
-  beep(440, .01, .001); openShell(); showWalk();
+  A.wake(); openShell(); showWalk();
 }
 function openShell() {
   pl.style.setProperty("--c", P.c); pl.classList.add("on"); document.body.style.overflow = "hidden"; keepAwake(true);
@@ -585,6 +580,7 @@ document.addEventListener("visibilitychange", () => {
 /* ================= boot ================= */
 $("bDate").value = iso(dNow === 6 ? today : addD(today, 6 - dNow));
 try { new ResizeObserver(drawChart).observe($("chartBox")); } catch (e) {}
+A.listen();
 renderAll(); renderInstall(); renderNotify();
 const h0 = location.hash.slice(1);
 if (VIEWS.includes(h0) && h0 !== "today") show(h0);

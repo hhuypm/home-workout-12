@@ -1,5 +1,5 @@
 /* Offline support: precache the app shell, then serve cache-first and refresh in the background. */
-const CACHE = "workout12-v3";
+const CACHE = "workout12-v4";
 const SHELL = [
   "./",
   "index.html",
@@ -10,6 +10,7 @@ const SHELL = [
   "js/logic.js",
   "js/store.js",
   "js/notify.js",
+  "js/audio.js",
   "js/icons.js",
   "vendor/gsap.min.js",
   "fonts/inter-latin-opsz-normal.woff2",

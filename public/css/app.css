@@ -413,3 +413,6 @@ details.lvi summary::-webkit-details-marker{display:none}
 .notif h4{margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em}
 .notif .dbtns{margin-top:12px}
 .notif .dbtn2.on{background:color-mix(in srgb,var(--legs) 16%,transparent);color:var(--legs)}
+/* time-is-up flash on the player */
+#pl.flash::after{content:"";position:fixed;inset:0;z-index:5;pointer-events:none;background:var(--c);opacity:0;animation:tflash .9s ease-out 1}
+@keyframes tflash{0%{opacity:.55}100%{opacity:0}}
