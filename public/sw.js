@@ -1,5 +1,5 @@
 /* Offline support: precache the app shell, then serve cache-first and refresh in the background. */
-const CACHE = "workout12-v2";
+const CACHE = "workout12-v3";
 const SHELL = [
   "./",
   "index.html",
@@ -63,7 +63,7 @@ self.addEventListener("message", e => {
       try {
         const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
         if (!wins.some(c => c.visibilityState === "visible"))
-          await self.registration.showNotification(d.note.title, { body: d.note.body, tag: "timer", renotify: true, vibrate: [200, 100, 200], icon: "icons/icon-192.png", badge: "icons/icon-192.png", data: { url: "./" } });
+          await self.registration.showNotification(d.note.title, { body: d.note.body, tag: "timer", renotify: true, ...((d.fx && d.fx.silent) ? { silent: true } : { silent: false, vibrate: (d.fx && d.fx.vibrate) || [] }), icon: "icons/icon-192.png", badge: "icons/icon-192.png", data: { url: "./" } });
       } catch (err) {}
       done();
     }, Math.max(0, d.at - Date.now()));

@@ -193,6 +193,7 @@ const renderAll = () => { renderToday(); renderWeek(); renderRoad(); renderProg(
 /* ================= sound + timer ================= */
 let AC = null;
 function beep(f, d, v) {
+  if (!N.soundOn()) return;
   try {
     AC = AC || new (window.AudioContext || window.webkitAudioContext)();
     if (AC.state === "suspended") AC.resume();
@@ -202,7 +203,9 @@ function beep(f, d, v) {
     o.start(); o.stop(AC.currentTime + d);
   } catch (e) {}
 }
-const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+const buzz = p => { if (!N.vibOn()) return; try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+/* Timer finished: three rising notes and a long double buzz. */
+function chime() { beep(988, .18, .45); setTimeout(() => beep(1319, .18, .45), 200); setTimeout(() => beep(1568, .5, .45), 400); buzz(N.RING); }
 
 /* One countdown at a time, driven by wall-clock so it stays right when the tab sleeps. */
 let T = null;
@@ -222,7 +225,7 @@ setInterval(() => {
   const left = Math.ceil((T.end - Date.now()) / 1000);
   if (left <= 3 && left > 0 && left !== T.lb) { T.lb = left; beep(700, .09); }
   if (left <= 0) {
-    const f = T.onEnd, note = T.note; T = null; beep(990, .45); buzz([200, 80, 200]);
+    const f = T.onEnd, note = T.note; T = null; chime();
     if (note && document.hidden && N.enabled()) N.show(note);   /* app in the background: tell the user */
     f && f(); return;
   }
@@ -482,6 +485,8 @@ function dataAction(a) {
     return msg("Đã xuất file sao lưu. Giữ file này ở nơi an toàn (Drive, Zalo, email…).", "ok");
   }
   if (a === "import") return $("impFile").click();
+  if (a === "snd") { N.setSound(!N.soundOn()); armed = null; renderNotify(); if (N.soundOn()) chime(); return; }
+  if (a === "vib") { N.setVib(!N.vibOn()); armed = null; renderNotify(); if (N.vibOn()) buzz(N.RING); return; }
   if (a === "notif-ask") return N.ask().then(renderNotify);
   if (a === "notif-toggle") { N.setWanted(!N.wanted()); N.cancel(); return renderNotify(); }
   if (a === "notif-test") return N.show({ title: "Thông báo hoạt động", body: "Khi hết giờ rest, bạn sẽ thấy thông báo như thế này." }).then(ok => msg(ok ? "Đã gửi thông báo thử." : "Không gửi được thông báo thử. Kiểm tra quyền thông báo của app.", ok ? "ok" : "err"));
@@ -498,7 +503,9 @@ async function importFile(f) {
 /* ================= notifications setting ================= */
 function renderNotify() {
   const el = $("notify"), perm = N.permission();
-  const head = `<h4>Thông báo hết giờ</h4>`;
+  const snd = N.soundOn(), vib = N.vibOn(), canV = N.canVibrate();
+  const fxRow = `<div class="dbtns"><button class="dbtn2 press${snd ? " on" : ""}" data-data="snd" type="button" aria-pressed="${snd}">Chuông: ${snd ? "bật" : "tắt"}</button><button class="dbtn2 press${vib && canV ? " on" : ""}" data-data="vib" type="button" aria-pressed="${vib && canV}" ${canV ? "" : "disabled"}>Rung: ${canV ? (vib ? "bật" : "tắt") : "không hỗ trợ"}</button></div><p class="hint">Chuông và rung dùng cho cả lúc app đang mở và lúc có thông báo.${canV ? "" : " iPhone không cho web app rung; thông báo vẫn có âm."}</p>`;
+  const head = `<h4>Chuông, rung &amp; thông báo hết giờ</h4>` + fxRow;
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
   let body;
   if (perm === "unsupported") body = `<p class="hint">${ios ? "Trên iPhone, thông báo chỉ hoạt động khi app đã cài lên màn hình chính: mở bằng Safari, bấm Chia sẻ, chọn “Thêm vào MH chính”, rồi mở app từ icon vừa tạo." : "Trình duyệt này không hỗ trợ thông báo."}</p>`;

@@ -8,6 +8,20 @@
 const PREF = "player12-notify";
 export const SW_MAX_MS = 285000;
 
+/* Sound and vibration switches. They apply to the in-app chime and to the notification. */
+export const RING = [300, 120, 300, 120, 500];
+const flag = key => { try { return localStorage.getItem(key) !== "off"; } catch (e) { return true; } };
+const setFlag = (key, on) => { try { localStorage.setItem(key, on ? "on" : "off"); } catch (e) {} };
+export const soundOn = () => flag("player12-sound");
+export const vibOn = () => flag("player12-vibrate");
+export const setSound = on => setFlag("player12-sound", on);
+export const setVib = on => setFlag("player12-vibrate", on);
+export const canVibrate = () => typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
+
+/** What a notification should do. `silent` mutes both sound and vibration, so it is only set when both are off,
+    and browsers reject a silent notification that also names a vibration pattern. */
+export const fx = (sound = soundOn(), vib = vibOn()) => !sound && !vib ? { silent: true } : { silent: false, vibrate: vib ? RING : [] };
+
 export const supported = () => "Notification" in window && "serviceWorker" in navigator;
 export const permission = () => supported() ? Notification.permission : "unsupported";
 
@@ -34,7 +48,7 @@ export function textFor(kind, o = {}) {
   }
 }
 
-const options = note => ({ body: note.body, tag: "timer", renotify: true, vibrate: [200, 100, 200], icon: "icons/icon-192.png", badge: "icons/icon-192.png", data: { url: "./" } });
+const options = note => ({ body: note.body, tag: "timer", renotify: true, ...fx(), icon: "icons/icon-192.png", badge: "icons/icon-192.png", data: { url: "./" } });
 
 const reg = () => navigator.serviceWorker.ready;
 
@@ -46,7 +60,7 @@ export async function show(note) {
 /** Ask the service worker to show `note` at wall-clock time `at` (ms), if it is close enough. */
 export function schedule(at, note) {
   if (at - Date.now() > SW_MAX_MS) return;
-  reg().then(r => r.active && r.active.postMessage({ type: "schedule", id: "timer", at, note })).catch(() => {});
+  reg().then(r => r.active && r.active.postMessage({ type: "schedule", id: "timer", at, note, fx: fx() })).catch(() => {});
 }
 export function cancel() {
   reg().then(r => r.active && r.active.postMessage({ type: "cancel", id: "timer" })).catch(() => {});
