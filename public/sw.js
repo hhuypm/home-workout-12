@@ -1,5 +1,5 @@
 /* Offline support: precache the app shell, then serve cache-first and refresh in the background. */
-const CACHE = "workout12-v4";
+const CACHE = "workout12-v5";
 const SHELL = [
   "./",
   "index.html",
@@ -13,8 +13,20 @@ const SHELL = [
   "js/audio.js",
   "js/icons.js",
   "vendor/gsap.min.js",
-  "fonts/inter-latin-opsz-normal.woff2",
-  "fonts/inter-vietnamese-opsz-normal.woff2",
+  "fonts/barlow-latin-400-normal.woff2",
+  "fonts/barlow-vietnamese-400-normal.woff2",
+  "fonts/barlow-latin-500-normal.woff2",
+  "fonts/barlow-vietnamese-500-normal.woff2",
+  "fonts/barlow-latin-600-normal.woff2",
+  "fonts/barlow-vietnamese-600-normal.woff2",
+  "fonts/barlow-latin-700-normal.woff2",
+  "fonts/barlow-vietnamese-700-normal.woff2",
+  "fonts/barlow-condensed-latin-600-normal.woff2",
+  "fonts/barlow-condensed-vietnamese-600-normal.woff2",
+  "fonts/barlow-condensed-latin-700-normal.woff2",
+  "fonts/barlow-condensed-vietnamese-700-normal.woff2",
+  "fonts/barlow-condensed-latin-800-normal.woff2",
+  "fonts/barlow-condensed-vietnamese-800-normal.woff2",
   "icons/favicon.svg",
   "icons/icon-192.png",
   "icons/icon-512.png",

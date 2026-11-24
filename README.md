@@ -37,16 +37,20 @@ Khi sửa file trong `public/`, tăng số trong `CACHE` ở `public/sw.js` (ví
 ```
 public/
   index.html            khung trang, 4 tab
-  css/app.css           giao diện (light / dark theo máy)
+  css/app.css           giao diện: bê tông (sáng) / thảm cao su (tối), màu đĩa tạ cho từng buổi
   js/data.js            nội dung giáo án: buổi tập, chặng, level
   js/logic.js           quy tắc: tuần hiện tại, số set, walk target, superset, lên level, mục tiêu tuần
   js/store.js           lưu / đọc dữ liệu, sao lưu, khôi phục
   js/app.js             giao diện + player
   js/icons.js           icon SVG
+  js/audio.js           chuông hết giờ (mẫu âm tự dựng, dự phòng bằng thẻ audio)
+  js/notify.js          thông báo hết giờ, chuông và rung
   sw.js                 offline
   manifest.webmanifest  thông tin cài app
 test/logic.test.js      test cho logic.js và store.js
 ```
+
+Phông Barlow và Barlow Condensed (SIL OFL) nằm trong `public/fonts/`, dùng offline. Mỗi set là một viên đĩa tạ: rỗng khi chưa làm, đặc màu khi xong; màu mỗi buổi lấy theo màu đĩa tạ Olympic.
 
 Đổi giáo án (bài, số set, reps, level) thì sửa `public/js/data.js`. Ngày bắt đầu là `START` trong file đó.
 

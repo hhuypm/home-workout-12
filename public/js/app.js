@@ -3,7 +3,7 @@ import { S, WEEK, DAYN, LIFT, PH, PL, TESTS, GOALS, WEEKS } from "./data.js";
 import * as L from "./logic.js";
 import { fmt, iso, addD, dateOf, mmss, incl, effS, phaseOf, lvName } from "./logic.js";
 import * as store from "./store.js";
-import { ic, arc, miniRing } from "./icons.js";
+import { ic } from "./icons.js";
 import * as N from "./notify.js";
 import * as A from "./audio.js";
 
@@ -35,88 +35,89 @@ const howLinks = n => {
   const q = encodeURIComponent(qName(n));
   return `<div class="how"><a href="https://www.google.com/search?tbm=isch&q=${q}%20exercise" target="_blank" rel="noopener">${ic("target")}Xem hình</a><a href="https://www.youtube.com/results?search_query=${q}%20proper%20form" target="_blank" rel="noopener">${ic("play")}Video mẫu</a></div>`;
 };
-const deco = () => `<svg class="deco" viewBox="0 0 250 250" aria-hidden="true" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="16"><circle cx="125" cy="125" r="112"/><circle cx="125" cy="125" r="80" stroke="rgba(255,255,255,.11)"/><circle cx="125" cy="125" r="48" stroke="rgba(255,255,255,.07)"/></svg>`;
+/* Session identity: its plate colour, and the text colour that reads on it. */
+const sty = k => `--c:${S[k].c};--on:var(--on-${k})`;
+const WALK = "--c:var(--walk);--on:var(--on-walk)", MINI = "--c:var(--mini);--on:var(--on-mini)";
+/* Sets as weight plates: hollow until done. */
+const plates = (done, n) => `<span class="plates" role="img" aria-label="${done} trên ${n} set">${Array.from({ length: n }, (_, i) => `<i class="plate${i < done ? " on" : ""}"></i>`).join("")}</span>`;
+const rack = (done, tot) => `<div class="rack" aria-hidden="true">${Array.from({ length: tot }, (_, i) => `<i class="${i < done ? "on" : ""}"></i>`).join("")}</div>`;
+const mbar = pct => `<div class="mbar" aria-hidden="true"><i style="width:${Math.round(Math.max(0, Math.min(1, pct)) * 100)}%"></i></div>`;
 const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
 
 /* ================= Hôm nay ================= */
 function renderToday() {
   const d = dayInfo(selW, selI), s = S[d.k], ph = phaseOf(selW), dt = dateOf(selW, selI), isT = iso(dt) === iso(today);
   const isLift = d.L.tot > 0;
-  const h = `<header class="vhead"><div><div class="dl">${isT ? DAYN[selI] + ", " + dt.getDate() + " tháng " + (dt.getMonth() + 1) : dt.getDate() + " tháng " + (dt.getMonth() + 1) + " · Tuần " + selW}</div><h1>${isT ? "Hôm nay" : DAYN[selI]}</h1></div>${!isT && inProg ? `<button class="pill press" data-today="1">${ic("cl")}Hôm nay</button>` : `<span class="pill">Tuần ${selW}/${WEEKS}</span>`}</header>`;
+  const h = `<header class="vhead"><div><div class="dl">${isT ? DAYN[selI] + ", " + dt.getDate() + " tháng " + (dt.getMonth() + 1) : dt.getDate() + " tháng " + (dt.getMonth() + 1) + ", tuần " + selW}</div><h1>${isT ? "Hôm nay" : DAYN[selI]}</h1></div>${!isT && inProg ? `<button class="pill press" data-today="1">${ic("cl")}Hôm nay</button>` : `<span class="pill">Tuần ${selW}/${WEEKS}</span>`}</header>`;
 
-  /* three rings */
-  const rows = [
-    ["Strength", isLift ? d.L.dn / d.L.tot : 0, isLift ? `${d.L.dn}<small>/${d.L.tot} set</small>` : `Rest`, isLift ? s.c : "var(--ink3)", !isLift],
-    ["Incline Walk", d.wt ? d.wm / d.wt : (d.wm ? 1 : 0), d.wt ? `${d.wm}<small>/${d.wt} phút</small>` : (d.wm ? `${d.wm}<small> phút</small>` : "Rest"), "var(--walk)", !d.wt && !d.wm],
-    ["Mini", d.M.tot ? d.M.dn / d.M.tot : 0, `${d.M.dn}<small>/${d.M.tot} set</small>`, "var(--mini)", false]];
-  const ringCols = [isLift ? s.c : "var(--ink3)", "var(--walk)", "var(--mini)"];
-  const sum = `<div class="card sum"><svg viewBox="0 0 128 128" aria-hidden="true">${arc(64, 56, 14, rows[0][1], ringCols[0])}${arc(64, 39, 14, rows[1][1], ringCols[1])}${arc(64, 22, 14, rows[2][1], ringCols[2])}</svg>
-  <div class="legend">${rows.map(r => `<div class="lg${r[4] ? " off" : ""}" style="--c:${r[3]}"><i></i><span>${r[0]}</span><b>${r[2]}</b></div>`).join("")}</div></div>`;
+  /* today at a glance: three numbers, three bars */
+  const meters = [
+    ["Strength", isLift ? d.L.dn / d.L.tot : 0, isLift ? `${d.L.dn}<small>/${d.L.tot} set</small>` : `<small>Nghỉ</small>`, isLift ? s.c : "var(--ink3)", !isLift],
+    ["Incline Walk", d.wt ? d.wm / d.wt : (d.wm ? 1 : 0), d.wt ? `${d.wm}<small>/${d.wt} phút</small>` : (d.wm ? `${d.wm}<small>phút</small>` : `<small>Nghỉ</small>`), "var(--walk)", !d.wt && !d.wm],
+    ["Mini Circuit", d.M.tot ? d.M.dn / d.M.tot : 0, `${d.M.dn}<small>/${d.M.tot} set</small>`, "var(--mini)", false]];
+  const sum = `<section class="panel meters" aria-label="Tiến độ hôm nay">${meters.map(m => `<div class="meter${m[4] ? " off" : ""}" style="--c:${m[3]}"><span class="ml">${m[0]}</span><b class="mv">${m[2]}</b>${mbar(m[1])}</div>`).join("")}</section>`;
 
-  /* week strip */
-  const strip = `<div class="card wk"><div class="wkh"><div><b>Tuần ${selW} · ${ph.t}</b><span>${fmt(dateOf(selW, 0))} – ${fmt(dateOf(selW, 6))}</span></div><button class="ar press" id="pw" aria-label="Tuần trước" ${selW <= 1 ? "disabled" : ""}>${ic("cl")}</button><button class="ar press" id="nw" aria-label="Tuần sau" ${selW >= WEEKS ? "disabled" : ""}>${ic("cr")}</button></div>
+  /* week strip: each day ends with a plate that fills as the day gets done */
+  const strip = `<section class="panel wk"><div class="wkh"><div><b>Tuần ${selW}, ${ph.t}</b><span>${fmt(dateOf(selW, 0))} – ${fmt(dateOf(selW, 6))}</span></div><button class="ar press" id="pw" aria-label="Tuần trước" ${selW <= 1 ? "disabled" : ""}>${ic("cl")}</button><button class="ar press" id="nw" aria-label="Tuần sau" ${selW >= WEEKS ? "disabled" : ""}>${ic("cr")}</button></div>
   <div class="days7">${WEEK.map(([n, k], i) => {
     const x = dayInfo(selW, i), pc = x.L.tot ? x.L.dn / x.L.tot : x.wt ? x.wm / x.wt : 0, ok = pc >= 1;
-    const t = iso(dateOf(selW, i)) === iso(today), c = S[k].c;
-    return `<button class="dbtn${i === selI ? " sel" : ""}${t ? " today" : ""}" style="--c:${c}" data-d="${i}" aria-pressed="${i === selI}" aria-label="${DAYN[i]} ${fmt(dateOf(selW, i))}, ${S[k].name}"><span class="wd">${n}</span><span class="dr"><svg viewBox="0 0 38 38">${arc(19, 16, 4, ok ? 1 : pc, c)}</svg><b>${ok ? ic("check") : dateOf(selW, i).getDate()}</b></span></button>`;
-  }).join("")}</div></div>`;
+    const t = iso(dateOf(selW, i)) === iso(today);
+    return `<button class="dbtn${i === selI ? " sel" : ""}${t ? " today" : ""}" style="--c:${S[k].c}" data-d="${i}" aria-pressed="${i === selI}" aria-label="${DAYN[i]} ${fmt(dateOf(selW, i))}, ${S[k].name}${ok ? ", đã xong" : ""}"><span class="wd">${n}</span><span class="dn">${dateOf(selW, i).getDate()}</span><i class="plate${ok ? " on" : ""}" style="--p:${Math.round(Math.min(1, pc) * 100)}"></i></button>`;
+  }).join("")}</div></section>`;
 
-  /* walk card (hero on rest days, small card otherwise) */
+  /* incline walk */
   const walkBlock = main => {
     const pct = d.wt ? Math.min(1, d.wm / d.wt) : 0;
     const ctx = ["push", "pull", "upper"].includes(d.k) ? "sau strength session" : d.k === "stretch" ? "nhẹ nhàng" : d.k === "rest" ? "buổi chính hôm nay" : "";
-    const btnTxt = `${d.wm >= d.wt ? "Walk thêm" : d.wm ? "Tiếp tục walk" : "Start walk"} · ${Math.max(5, d.wt - d.wm)}'`;
+    const btnTxt = `${d.wm >= d.wt ? "Walk thêm" : d.wm ? "Tiếp tục walk" : "Bắt đầu walk"}, ${Math.max(5, d.wt - d.wm)} phút`;
     const manual = `<label class="manual"><input type="number" id="wMin" min="0" inputmode="numeric" value="${d.wm || ""}" placeholder="0" aria-label="Phút đã đi"><span>phút đã đi, sửa tay nếu cần</span></label>`;
-    const trio = c => `<div class="${c}"><div><small>Target</small><b>${d.wt}<em>phút</em></b></div><div><small>Incline</small><b>${incl(selW)}</b></div><div><small>Speed</small><b>4,5–5,5<em>km/h</em></b></div></div>`;
-    if (main) return `<div class="hero" style="--g:${S.rest.g};--c:#0B8F88;--cdeep:${S.rest.deep}">${deco()}<div class="htop"><span class="itile">${ic("walk")}</span><span>Rest day · ${d.wt} phút</span></div><h2>Incline Walk</h2>
-   ${trio("htrio")}
-   <div class="hprog"><div class="hbar"><i style="width:${pct * 100}%"></i></div><div class="hrow"><span>${d.wm}/${d.wt} phút</span><span>không vịn tay vào máy</span></div></div>
-   <button class="cta press" data-walk="1">${ic("play")}${btnTxt}</button>${manual}</div>`;
-    return `<div class="card" style="--c:var(--walk)"><div class="ch"><span class="itile">${ic("walk")}</span><div><h3>Incline Walk</h3><p>${d.wt ? d.wt + " phút " + ctx : "Leg day: không walk"}</p></div>${d.wt ? miniRing(pct, "var(--walk)", d.wm + "'") : ""}</div>
-   ${d.wt ? `${trio("trio")}
-   <button class="btn press" data-walk="1">${ic("play")}${btnTxt}</button>` : `<p class="sub" style="margin:12px 0 0;line-height:1.5">Không walk, hoặc cool-down 10 phút incline thấp.</p>`}${manual}</div>`;
+    const trio = `<div class="trio"><div><small>Target</small><b>${d.wt}<em>phút</em></b></div><div><small>Incline</small><b>${incl(selW)}</b></div><div><small>Speed</small><b>4,5–5,5<em>km/h</em></b></div></div>`;
+    if (main) return `<section class="panel hero" style="${WALK}"><h2>Incline Walk</h2><p class="hmeta">Ngày nghỉ, đây là buổi chính: ${d.wt} phút</p>${trio}
+   <div class="hprog">${mbar(pct)}<div class="hrow"><span>${d.wm}/${d.wt} phút</span><span>Không vịn tay vào máy</span></div></div>
+   <button class="cta press" data-walk="1">${ic("play")}${btnTxt}</button>${manual}</section>`;
+    return `<section class="panel" style="${WALK}"><div class="bh"><div><h3>Incline Walk</h3><p>${d.wt ? d.wt + " phút " + ctx : "Leg day: không walk"}</p></div>${d.wt ? `<b class="mv">${d.wm}<small>/${d.wt} phút</small></b>` : ""}</div>
+   ${d.wt ? `${mbar(pct)}${trio}
+   <button class="btn press" data-walk="1">${ic("play")}${btnTxt}</button>` : `<p class="sub" style="margin:0;line-height:1.5">Không walk, hoặc cool-down 10 phút incline thấp.</p>`}${manual}</section>`;
   };
 
   let colA = sum + strip, colB = "";
   if (isLift) {
     const pct = d.L.dn / d.L.tot, done = d.L.dn >= d.L.tot, ex = liftEx(d.k), sv = st.sets[d.key] || {};
-    const note = dl(selW) ? "Deload week: đã giảm ½ số set" : selW <= 2 ? "Adaptation: RPE 7, còn 3 reps in reserve" : "";
-    colA += `<div class="hero" style="--g:${s.g};--c:${s.deep};--cdeep:${s.deep}">${deco()}<div class="htop"><span class="itile">${ic(s.ic)}</span><span>Strength · ${s.dur}</span></div><h2>${s.full}</h2>
-   <div class="chips"><span>${ex.length} bài</span><span>${d.L.tot} set</span>${ex.some(e => e.ss) ? `<span>Superset</span>` : ""}</div>${note ? `<p class="hnote">${note}</p>` : ""}
-   <div class="hprog"><div class="hbar"><i style="width:${pct * 100}%"></i></div><div class="hrow"><span>${d.L.dn}/${d.L.tot} set</span><span>${Math.round(pct * 100)}%</span></div></div>
-   <button class="cta press" data-play="lift">${done ? ic("check") + "Đã xong · xem lại" : ic("play") + (d.L.dn ? `Tiếp tục · set ${d.L.dn + 1}/${d.L.tot}` : "Bắt đầu tập")}</button>${d.L.dn ? `<button class="ghost press" data-reset="lift">Làm lại từ đầu</button>` : ""}</div>`;
+    const note = dl(selW) ? "Tuần deload: đã giảm ½ số set" : selW <= 2 ? "Adaptation: RPE 7, còn 3 reps in reserve" : "";
+    colA += `<section class="panel hero" style="${sty(d.k)}"><h2>${s.full}</h2><p class="hmeta">${ex.length} bài, ${d.L.tot} set${ex.some(e => e.ss) ? ", có superset" : ""}, ${s.dur}</p>${note ? `<p class="hnote">${note}</p>` : ""}
+   <div class="hprog">${rack(d.L.dn, d.L.tot)}<div class="hrow"><span>${d.L.dn}/${d.L.tot} set</span><span>${Math.round(pct * 100)}%</span></div></div>
+   <button class="cta press" data-play="lift">${done ? ic("check") + "Đã xong, xem lại" : ic("play") + (d.L.dn ? `Tiếp tục, set ${d.L.dn + 1}/${d.L.tot}` : "Bắt đầu tập")}</button>${d.L.dn ? `<button class="ghost press" data-reset="lift">Làm lại từ đầu</button>` : ""}</section>`;
     const row = (e, j) => {
-      const n = effS(e.s, selW, j), dn = (sv[j] || 0) >= n;
-      const sub = [e.r, e.sec ? "rest " + mmss(e.sec) : ""].filter(Boolean).join(" · ");
-      const lv = e.pk ? `<span class="lvb${ready(e.pk) ? " rd" : ""}">Level ${e.lv + 1}/${e.lvN}${ready(e.pk) ? " · sẵn sàng lên level" : hitsSince(e.pk).length ? " · đạt top reps " + hitsSince(e.pk).length + "/2" : ""}</span>` : "";
-      return `<li class="ex${dn ? " done" : ""}"><span class="num">${dn ? ic("check") : j + 1}</span><div class="exm"><b>${e.n}</b><small>${sub}</small>${lv}</div><div class="sets"><b>${n}</b><span>set</span></div></li>`;
+      const n = effS(e.s, selW, j), cur = Math.min(sv[j] || 0, n), dn = cur >= n;
+      const sub = [e.r.replace(" · ", ", "), e.sec ? "rest " + mmss(e.sec) : ""].filter(Boolean).join(", ");
+      const lv = e.pk ? `<span class="lvb${ready(e.pk) ? " rd" : ""}">Level ${e.lv + 1}/${e.lvN}${ready(e.pk) ? ", sẵn sàng lên level" : hitsSince(e.pk).length ? ", đạt top reps " + hitsSince(e.pk).length + "/2" : ""}</span>` : "";
+      return `<li class="ex${dn ? " done" : ""}"><span class="num">${dn ? ic("check") : j + 1}</span><div class="exm"><b>${e.n}</b><small>${sub}</small>${lv}</div>${plates(cur, n)}</li>`;
     };
     let li = "", j = 0;
     while (j < ex.length) {
       const e = ex[j], f = ex[j + 1];
-      if (e.ss && f && f.ss === e.ss) { li += `<li class="ssg"><div class="ssl">${ic("link")}Superset · làm 2 bài liên tiếp, không rest ở giữa</div><ul>${row(e, j)}${row(f, j + 1)}</ul></li>`; j += 2; }
+      if (e.ss && f && f.ss === e.ss) { li += `<li class="ssg"><div class="ssl">${ic("link")}Superset: làm 2 bài liên tiếp, không rest ở giữa</div><ul>${row(e, j)}${row(f, j + 1)}</ul></li>`; j += 2; }
       else { li += row(e, j); j++; }
     }
-    colB += `<div class="sh"><h2>Bài tập</h2><span class="sub">${ex.length} bài · ${s.dur}</span></div><div class="card" style="--c:${s.c};padding:0"><ul class="exl">${li}</ul></div>`;
+    colB += `<div class="sh"><h2>Bài tập</h2><span class="sub">${ex.length} bài, ${s.dur}</span></div><section class="panel" style="${sty(d.k)};padding:0"><ul class="exl">${li}</ul></section>`;
     colB += `<div class="sh"><h2>Thêm hôm nay</h2></div>` + walkBlock(false);
   } else {
     colA += walkBlock(true);
     colB += `<div class="sh"><h2>Thêm hôm nay</h2></div>`;
   }
   const mx = exFor("mini", d.k), mp = d.M.tot ? d.M.dn / d.M.tot : 0;
-  colB += `<div class="card" style="--c:var(--mini)"><div class="ch"><span class="itile">${ic("bolt")}</span><div><h3>Mini Circuit · 10 phút</h3><p>3 rounds${d.k === "push" || d.k === "upper" ? ", chỉ core" : ", Push-Up + core"}</p></div>${miniRing(mp, "var(--mini)", d.M.dn + "/" + d.M.tot)}</div>
+  colB += `<section class="panel" style="${MINI}"><div class="bh"><div><h3>Mini Circuit</h3><p>10 phút, 3 rounds${d.k === "push" || d.k === "upper" ? ", chỉ core" : ", Push-Up + core"}</p></div><b class="mv mini-val">${d.M.dn}<small>/${d.M.tot} set</small></b></div>${mbar(mp)}
   <ul class="mini-l">${mx.map(m => `<li><span>${m.n}</span><b>3 × ${m.r}</b></li>`).join("")}</ul>
-  <button class="btn dark press" data-play="mini">${d.M.dn >= d.M.tot ? ic("check") + "Đã xong · làm lại" : ic("play") + (d.M.dn ? "Làm tiếp" : "Start Mini Circuit")}</button></div>
-  <div class="card note" style="--c:${ph.c}"><span class="itile">${ic("route")}</span><div><b>Chặng ${PH.indexOf(ph) + 1} · ${ph.t}</b><p>${ph.p}</p></div></div>`;
+  <button class="btn press" data-play="mini">${d.M.dn >= d.M.tot ? ic("check") + "Đã xong, làm lại" : ic("play") + (d.M.dn ? "Làm tiếp" : "Bắt đầu Mini Circuit")}</button></section>
+  <section class="panel note" style="--c:${ph.c}"><div><b>Chặng ${PH.indexOf(ph) + 1}, ${ph.t}</b><p>${ph.p}</p></div></section>`;
   $("v-today").innerHTML = h + `<div class="tgrid"><div class="col">${colA}</div><div class="col">${colB}</div></div>`;
 }
-
 /* ================= Lịch ================= */
 function renderWeek() {
-  $("weekSub").textContent = `Tuần ${wNow} · ${fmt(dateOf(wNow, 0))} – ${fmt(dateOf(wNow, 6))}`;
+  $("weekSub").textContent = `Tuần ${wNow}, ${fmt(dateOf(wNow, 0))} – ${fmt(dateOf(wNow, 6))}`;
   $("days").innerHTML = WEEK.map(([n, k], i) => {
     const s = S[k], wt = L.walkT(wNow, k), isT = inProg && i === dNow;
-    return `<details class="day${isT ? " today" : ""}" style="--c:${s.c}"${isT ? " open" : ""}><summary><span class="itile">${ic(s.ic)}</span><div><span class="dn">${DAYN[i]}${isT ? " · hôm nay" : ""}</span><span class="dt">${s.full}</span><span class="dm">${cap([s.dur, wt ? "walk " + wt + "'" : ""].filter(Boolean).join(" · ") || "rest")}</span></div><span class="chev">${ic("cr")}</span></summary><ul class="dlist">${liftEx(k).map((e, j) => `<li><span>${e.ss ? `<span class="ssb">${e.ss}</span>` : ""}${e.n}</span><span class="r">${effS(e.s, wNow, j) > 1 ? effS(e.s, wNow, j) + " × " : ""}${e.r}</span>${e.tip ? `<small>${e.tip}</small>` : ""}${e.n.startsWith("Weigh-in") ? "" : `<small class="hw">${howLinks(e.n)}</small>`}</li>`).join("")}<li><span>Incline Walk</span><span class="r">${wt ? wt + "' · " + incl(wNow) : "rest"}</span></li><li><span>Mini Circuit</span><span class="r">${k === "push" || k === "upper" ? "chỉ core" : "Push-Up + core"}</span></li></ul></details>`;
+    return `<details class="day${isT ? " today" : ""}" style="${sty(k)}"${isT ? " open" : ""}><summary><div><span class="dn">${DAYN[i]}${isT ? ", hôm nay" : ""}</span><span class="dt">${s.full}</span><span class="dm">${cap([s.dur, wt ? "walk " + wt + " phút" : ""].filter(Boolean).join(", ") || "rest")}</span></div><span class="chev">${ic("cr")}</span></summary><ul class="dlist">${liftEx(k).map((e, j) => `<li><span>${e.ss ? `<span class="ssb">${e.ss}</span>` : ""}${e.n}</span><span class="r">${effS(e.s, wNow, j) > 1 ? effS(e.s, wNow, j) + " × " : ""}${e.r.replace(" · ", ", ")}</span>${e.tip ? `<small>${e.tip}</small>` : ""}${e.n.startsWith("Weigh-in") ? "" : `<small class="hw">${howLinks(e.n)}</small>`}</li>`).join("")}<li><span>Incline Walk</span><span class="r">${wt ? wt + " phút, " + incl(wNow) : "rest"}</span></li><li><span>Mini Circuit</span><span class="r">${k === "push" || k === "upper" ? "chỉ core" : "Push-Up + core"}</span></li></ul></details>`;
   }).join("") + `<p class="foot">Số set và phút walk theo tuần ${wNow}.</p>`;
 }
 
@@ -136,8 +137,8 @@ function renderGoals() {
     ["dumbbell", "var(--push)", "Strength", `Đủ ${GOALS.lifts} buổi trong tuần`, g.liftsDone / GOALS.lifts, `${g.liftsDone}<small>/${GOALS.lifts} buổi</small>`, g.ok.lifts],
     ["walk", "var(--walk)", "Incline Walk", `Ít nhất 90% của ${g.walkTarget} phút`, need ? g.walk / need : 0, `${g.walk}<small>/${need} phút</small>`, g.ok.walk],
     ["bolt", "var(--mini)", "Mini Circuit", `Ít nhất ${GOALS.miniDays} ngày trong tuần`, g.mini / GOALS.miniDays, `${g.mini}<small>/${GOALS.miniDays} ngày</small>`, g.ok.mini]];
-  $("goals").innerHTML = `<div class="cth"><h3 class="ct">Mục tiêu tuần ${w}</h3><span class="gsum${g.met === 3 ? " all" : ""}">${g.met === 3 ? ic("check") + "Đạt cả 3" : `Đạt ${g.met}/3`}</span></div><p class="cs">${fmt(dateOf(w, 0))} – ${fmt(dateOf(w, 6))} · ${phaseOf(w).t}</p>
-  <div class="goals">${rows.map(r => `<div class="goal${r[6] ? " ok" : ""}" style="--c:${r[1]}"><span class="itile">${ic(r[6] ? "check" : r[0])}</span><div class="gm"><b>${r[2]}</b><span>${r[3]}</span><div class="bar"><i style="width:${Math.min(100, r[4] * 100)}%"></i></div></div><div class="gv">${r[5]}</div></div>`).join("")}</div>`;
+  $("goals").innerHTML = `<div class="cth"><h3 class="ct">Mục tiêu tuần ${w}</h3><span class="gsum${g.met === 3 ? " all" : ""}">${g.met === 3 ? ic("check") + "Đạt cả 3" : `Đạt ${g.met}/3`}</span></div><p class="cs">${fmt(dateOf(w, 0))} – ${fmt(dateOf(w, 6))}, ${phaseOf(w).t}</p>
+  <div class="goals">${rows.map(r => `<div class="goal${r[6] ? " ok" : ""}" style="--c:${r[1]}"><i class="plate lg${r[6] ? " on" : ""}" style="--p:${Math.round(Math.min(1, r[4]) * 100)}" role="img" aria-label="${r[6] ? "Đạt" : "Chưa đạt"}"></i><div class="gm"><b>${r[2]}</b><span>${r[3]}</span><div class="bar"><i style="width:${Math.min(100, r[4] * 100)}%"></i></div></div><div class="gv">${r[5]}</div></div>`).join("")}</div>`;
 }
 
 function renderLv() {
@@ -146,7 +147,7 @@ function renderLv() {
   $("lvCard").innerHTML = `<h3 class="ct">Progression</h3><p class="cs">Mỗi bài có các level từ dễ đến khó. Bấm "đạt top reps" ở set cuối trong lúc tập; đạt 2 buổi là lên level. ${rc ? `<b style="color:var(--legs)">${rc} bài sẵn sàng lên level.</b>` : ""}</p>
  ${groups.map(g => `<div class="lvg"><div class="lvgh" style="--c:${S[g.k].c}"><i></i>${S[g.k].full}</div>${g.items.map(pk => {
     const i = lvOf(pk), Lv = PL[pk], h = hitsSince(pk).length, r = ready(pk), last = i >= Lv.length - 1, hist = (st.lvlH[pk] || []);
-    return `<details class="lvi${r ? " rd" : ""}" style="--c:${S[g.k].c}"><summary><div class="lvm"><b>${lvName(pk, i)}</b><span>Level ${i + 1}/${Lv.length}${last ? " · level cao nhất" : r ? " · sẵn sàng!" : ` · top reps ${Math.min(h, 2)}/2`}</span><span class="lvd">${Lv.map((_, q) => `<i class="${q < i ? "p" : q === i ? "c" : ""}"></i>`).join("")}</span></div>${last ? "" : `<button class="lvup press${r ? " rd" : ""}" data-up="${pk}">Lên level</button>`}</summary>
+    return `<details class="lvi${r ? " rd" : ""}" style="--c:${S[g.k].c}"><summary><div class="lvm"><b>${lvName(pk, i)}</b><span>Level ${i + 1}/${Lv.length}${last ? ", level cao nhất" : r ? ", sẵn sàng!" : `, top reps ${Math.min(h, 2)}/2`}</span><span class="lvd">${Lv.map((_, q) => `<i class="${q < i ? "p" : q === i ? "c" : ""}"></i>`).join("")}</span></div>${last ? "" : `<button class="lvup press${r ? " rd" : ""}" data-up="${pk}">Lên level</button>`}</summary>
   <ol class="lvl">${Lv.map((_, q) => `<li class="${q < i ? "p" : q === i ? "c" : ""}"><span>${q + 1}</span>${lvName(pk, q)}</li>`).join("")}</ol>
   <div class="lvf">${i > 0 ? `<button class="lvdn press" data-down="${pk}">Về level trước</button>` : ""}${hist.length ? `<span>Lên level gần nhất: ${dmy(hist[hist.length - 1].d)}</span>` : ""}</div></details>`;
   }).join("")}</div>`).join("")}
@@ -162,9 +163,9 @@ function renderProg() {
     rows += `<div class="wr${w === curW ? " now" : ""}"><span class="w">T${w}</span><span class="ld">${g.lifts.map(v => `<i class="${v ? "on" : ""}"></i>`).join("")}</span><div class="bar" style="--c:var(--walk)"><i style="width:${g.walkTarget ? Math.min(100, g.walk / g.walkTarget * 100) : 0}%"></i></div><span class="m">${g.walk}/${g.walkTarget}'</span><span class="mn${g.ok.mini ? " ok" : ""}" title="Ngày làm Mini Circuit">${g.mini}</span></div>`;
   }
   $("wrows").innerHTML = rows;
-  $("progSub").textContent = inProg ? `Tuần ${curW}/${WEEKS} · ${phaseOf(curW).t}` : curW < 1 ? `Bắt đầu ${fmt(dateOf(1, 0))}/${dateOf(1, 0).getFullYear()}` : `Đã xong ${WEEKS} tuần`;
+  $("progSub").textContent = inProg ? `Tuần ${curW}/${WEEKS}, ${phaseOf(curW).t}` : curW < 1 ? `Bắt đầu ${fmt(dateOf(1, 0))}/${dateOf(1, 0).getFullYear()}` : `Đã xong ${WEEKS} tuần`;
   $("stats").innerHTML = [[Ls, WEEKS * 4, "buổi tạ", "var(--push)", "", "dumbbell"], [+(W / 60).toFixed(1), WT / 60, "giờ walk", "var(--walk)", "h", "walk"], [M, WEEKS * 7, "ngày mini", "var(--mini)", "", "bolt"]]
-    .map(a => `<div class="card stat" style="--c:${a[3]}"><div class="mring"><svg viewBox="0 0 52 52">${arc(26, 22, 6, a[1] ? a[0] / a[1] : 0, a[3])}</svg><i>${ic(a[5])}</i></div><b>${num(a[0])}<small>/${Math.round(a[1])}${a[4]}</small></b><span>${a[2]}</span></div>`).join("");
+    .map(a => `<div class="panel stat" style="--c:${a[3]}"><b class="mv">${num(a[0])}<small>/${Math.round(a[1])}${a[4]}</small></b><span>${a[2]}</span>${mbar(a[1] ? a[0] / a[1] : 0)}</div>`).join("");
   $("tests").innerHTML = TESTS.map(([id, l]) => {
     const t = st.tests[id] || {}, has = v => v !== undefined && v !== "" && v !== null, ok = has(t.a) && has(t.b), df = ok ? t.b - t.a : null;
     return `<tr><td>${l}</td><td class="n"><input type="number" inputmode="numeric" data-t="${id}" data-s="a" value="${t.a ?? ""}" placeholder="–" aria-label="${l} tuần 1"></td><td class="n"><input type="number" inputmode="numeric" data-t="${id}" data-s="b" value="${t.b ?? ""}" placeholder="–" aria-label="${l} tuần 12"></td><td class="n df${df > 0 ? " up" : df < 0 ? " dn" : ""}">${df == null ? "–" : (df > 0 ? "+" : "") + df}</td></tr>`;
@@ -229,7 +230,7 @@ setInterval(() => {
 const togglePause = () => { if (!T.paused) { T.paused = true; T.rem = T.end - Date.now(); } else { T.paused = false; T.end = Date.now() + T.rem; } return T.paused; };
 
 const RC = 2 * Math.PI * 104;
-const ringHTML = (cls = "") => `<div class="ring ${cls}"><svg viewBox="0 0 240 240"><defs><linearGradient id="rgG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,var(--c) 55%,#fff)"/><stop offset="1" style="stop-color:var(--c)"/></linearGradient></defs><circle cx="120" cy="120" r="104" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="16"/><circle id="rg" class="pg jump" cx="120" cy="120" r="104" fill="none" stroke="url(#rgG)" stroke-width="16" stroke-linecap="round" stroke-dasharray="${RC.toFixed(1)}" stroke-dashoffset="0"/></svg><div class="in"><div class="rt" id="rt">0:00</div><div class="lb" id="rl"></div></div></div>`;
+const ringHTML = (cls = "") => `<div class="ring ${cls}"><svg viewBox="0 0 240 240"><circle cx="120" cy="120" r="104" fill="none" stroke="rgba(240,239,234,.14)" stroke-width="18"/><circle id="rg" class="pg jump" cx="120" cy="120" r="104" fill="none" style="stroke:var(--c)" stroke-width="18" stroke-linecap="butt" stroke-dasharray="${RC.toFixed(1)}" stroke-dashoffset="0"/></svg><div class="in"><div class="rt" id="rt">0:00</div><div class="lb" id="rl"></div></div></div>`;
 function setRing(left, dur, jump) {
   const r = $("rg"), t = $("rt");
   if (t) t.textContent = mmss(left);
@@ -260,17 +261,17 @@ function openPlay(kind) {
   const d = dayInfo(selW, selI), sp = steps(kind, d.k, selW), sv = setsOf(kind, d.key);
   let idx = sp.findIndex(x => x.q >= (sv[x.j] || 0));
   if (idx < 0) { Object.keys(sv).forEach(k => delete sv[k]); idx = 0; save(); }
-  P = { kind, k: d.k, w: selW, key: d.key, sp, idx, ex: exFor(kind, d.k), c: kind === "mini" ? "var(--mini)" : S[d.k].c, t0: Date.now(), title: kind === "mini" ? "Mini Circuit" : S[d.k].full };
+  P = { kind, k: d.k, w: selW, key: d.key, sp, idx, ex: exFor(kind, d.k), c: kind === "mini" ? "var(--mini)" : S[d.k].c, on: `var(--on-${kind === "mini" ? "mini" : d.k})`, t0: Date.now(), title: kind === "mini" ? "Mini Circuit" : S[d.k].full };
   A.wake(); openShell(); showWork();
 }
 function openWalk() {
   offerNotify();
   const d = dayInfo(selW, selI), target = Math.max(5, d.wt - d.wm);
-  P = { kind: "walk", key: d.key, c: "var(--walk)", t0: Date.now(), title: "Incline Walk", target, w: selW };
+  P = { kind: "walk", key: d.key, c: "var(--walk)", on: "var(--on-walk)", t0: Date.now(), title: "Incline Walk", target, w: selW };
   A.wake(); openShell(); showWalk();
 }
 function openShell() {
-  pl.style.setProperty("--c", P.c); pl.classList.add("on"); document.body.style.overflow = "hidden"; keepAwake(true);
+  pl.style.setProperty("--c", P.c); pl.style.setProperty("--on", P.on); pl.classList.add("on"); document.body.style.overflow = "hidden"; keepAwake(true);
   clearInterval(clockId);
   clockId = setInterval(() => { const c = $("pclock"); if (c && P) c.textContent = mmss(Math.floor((Date.now() - P.t0) / 1000)); }, 500);
   if (G()) gsap.fromTo(pl, { opacity: 0 }, { opacity: 1, duration: .25, clearProps: "opacity" });
@@ -281,15 +282,15 @@ function closePlay() {
 }
 const top = () => {
   const x = P.sp ? P.sp[Math.min(P.idx, P.sp.length - 1)] : null;
-  const sub = P.kind === "walk" ? `Target ${P.target} phút` : x && P.idx < P.sp.length ? `Bài ${x.j + 1}/${P.ex.length} · set ${Math.min(P.idx + 1, P.sp.length)}/${P.sp.length}` : `${P.sp.length}/${P.sp.length} set`;
+  const sub = P.kind === "walk" ? `Target ${P.target} phút` : x && P.idx < P.sp.length ? `Bài ${x.j + 1}/${P.ex.length}, set ${Math.min(P.idx + 1, P.sp.length)}/${P.sp.length}` : `${P.sp.length}/${P.sp.length} set`;
   return `<div class="ptop"><button class="gx press" data-pa="close" aria-label="Đóng">${ic("x")}</button><div class="t"><b>${P.title}</b><span>${sub}</span></div><div class="clock" id="pclockw">${ic("timer")}<span id="pclock">${mmss(Math.floor((Date.now() - P.t0) / 1000))}</span></div></div>${P.sp ? `<div class="segs">${P.sp.map((x, i) => `<i class="${i < P.idx ? "on" : i === P.idx ? "cur" : ""}"></i>`).join("")}</div>` : ""}`;
 };
-const anim = () => { if (G()) gsap.from("#pl .an", { y: 18, opacity: 0, duration: .45, stagger: .045, ease: "power3.out", clearProps: "transform,opacity" }); };
+const anim = () => { pl.scrollTop = 0; if (G()) gsap.from("#pl .an", { y: 18, opacity: 0, duration: .45, stagger: .045, ease: "power3.out", clearProps: "transform,opacity" }); };
 function nextCard(i, rest) {
   const x = P.sp[i];
-  if (!x) return `<div class="next an"><div><small>Tiếp theo</small><b>Hết buổi · bài cuối</b></div></div>`;
+  if (!x) return `<div class="next an"><div><small>Tiếp theo</small><b>Hết buổi, bài cuối</b></div></div>`;
   const e = P.ex[x.j];
-  return `<div class="next an"><div><small>Tiếp theo · set ${x.q + 1}/${x.n}</small><b>${e.n}</b></div>${rest ? `<span class="rb">${ic("timer")}Rest ${mmss(rest)}</span>` : rest === 0 ? `<span class="rb">No rest</span>` : ""}</div>`;
+  return `<div class="next an"><div><small>Tiếp theo, set ${x.q + 1}/${x.n}</small><b>${e.n}</b></div>${rest ? `<span class="rb">${ic("timer")}Rest ${mmss(rest)}</span>` : rest === 0 ? `<span class="rb">No rest</span>` : ""}</div>`;
 }
 function showWork() {
   pl.classList.remove("rest"); P.busy = false;
@@ -300,13 +301,13 @@ function showWork() {
   else if (e.dur) mid = `<div class="dtimer an"><b id="wt">${mmss(e.dur)}</b><button class="press" data-pa="wtime">${ic("play")}Đếm ${e.dur}s</button></div>`;
   const dots = x.n > 1 ? `<div class="dots">${Array.from({ length: x.n }, (_, i) => `<i class="${i < x.q ? "on" : i === x.q ? "cur" : ""}"></i>`).join("")}</div>` : "";
   const nav = `<div class="prow an"><button class="gbtn press" data-pa="back" ${P.idx ? "" : "disabled"}>${ic("back")}Set trước</button><button class="gbtn press" data-pa="skip">Bỏ qua${ic("skip")}</button></div>`;
-  pl.innerHTML = top() + `<div class="pbody"><div class="pk an"><span class="tag">Bài ${exNo}/${P.ex.length}</span>${e.ss ? `<span class="tag c">${ic("link")}${e.ss} · ${ssTxt}</span>` : ""}${e.emom ? `<span class="tag c">${ic("timer")}EMOM ${e.emom}'</span>` : ""}${e.pk ? `<span class="tag">Level ${e.lv + 1}/${e.lvN}</span>` : ""}</div>
+  pl.innerHTML = top() + `<div class="pbody"><div class="pk an"><span class="tag">Bài ${exNo}/${P.ex.length}</span>${e.ss ? `<span class="tag c">${ic("link")}${e.ss}, ${ssTxt}</span>` : ""}${e.emom ? `<span class="tag c">${ic("timer")}EMOM ${e.emom}'</span>` : ""}${e.pk ? `<span class="tag">Level ${e.lv + 1}/${e.lvN}</span>` : ""}</div>
  <div class="pname an">${e.n}</div>
  ${e.emom ? "" : `<div class="setbox an"><div class="setn"><b>${x.q + 1}</b><span>/${x.n}</span></div><div class="setl"><small>Set</small>${dots}</div></div>`}
  <div class="reps an"><div class="rv">${ic("target")}<div><span>${e.r.split(" · ")[0]}</span>${e.r.includes(" · ") ? `<small>${e.r.split(" · ").slice(1).join(" · ")}</small>` : ""}</div></div>${e.tip ? `<div class="tip">${ic("bulb")}<span>${e.tip}</span></div>` : ""}${e.n.startsWith("Weigh-in") ? "" : howLinks(e.n)}</div>${e.pk && x.q === x.n - 1 ? `<button class="hitb press an${(st.hit[e.pk] || []).includes(P.key) ? " on" : ""}" data-pa="hit">${ic("check")}<span>Mọi set đều đạt top reps<small>Bấm khi bạn làm được mức reps cao nhất ở tất cả các set hôm nay. Đạt 2 buổi là lên level.</small></span></button>` : ""}${mid}</div>
  <div class="pfoot">${nextCard(P.idx + 1, x.rest)}
  ${e.emom ? `<button class="pbig press an" data-pa="emom" id="emb">${ic("play")}Bắt đầu EMOM ${e.emom}'</button>` : `<button class="pbig press an" data-pa="done">${ic("check")}Xong set</button>`}${nav}</div>`;
-  if (e.emom) { $("rl").textContent = "Minute 1 · Pull-Up"; setRing(60, 60, true); }
+  if (e.emom) { $("rl").textContent = "Minute 1, Pull-Up"; setRing(60, 60, true); }
   anim();
 }
 function markDone() { const x = P.sp[P.idx], sv = setsOf(P.kind, P.key); sv[x.j] = Math.max(sv[x.j] || 0, x.q + 1); save(); }
@@ -318,7 +319,7 @@ function advance(withRest) {
 function showRest(sec, prev) {
   pl.classList.add("rest");
   const pe = prev ? P.ex[prev.j] : null;
-  pl.innerHTML = top() + `<div class="pbody" style="text-align:center">${pe ? `<div class="rest-h an"><span class="tag c">${ic("check")}Xong set ${prev.q + 1}/${prev.n} · ${pe.n.length > 22 ? pe.n.slice(0, 21) + "…" : pe.n}</span></div>` : ""}<div class="an" id="ringw">${ringHTML()}</div>
+  pl.innerHTML = top() + `<div class="pbody" style="text-align:center">${pe ? `<div class="rest-h an"><span class="tag c">${ic("check")}Xong set ${prev.q + 1}/${prev.n}, ${pe.n.length > 22 ? pe.n.slice(0, 21) + "…" : pe.n}</span></div>` : ""}<div class="an" id="ringw">${ringHTML()}</div>
  <div class="ctrl an"><button class="cb press" data-pa="m15" aria-label="Bớt 15 giây">−15</button><div class="cbl"><button class="cb main press" data-pa="pause" id="pz" aria-label="Tạm dừng">${ic("pause")}</button><span id="pzl">Tạm dừng</span></div><button class="cb press" data-pa="p15" aria-label="Thêm 15 giây">+15</button></div></div>
  <div class="pfoot">${nextCard(P.idx)}<button class="pbig press an" data-pa="go">Vào set luôn${ic("skip")}</button></div>`;
   $("rl").textContent = "rest";
@@ -331,7 +332,7 @@ function showDone() {
   T = null; pl.classList.remove("rest");
   const mins = Math.max(1, Math.round((Date.now() - P.t0) / 60000)), d = dayInfo(P.w, dayIdx(P.key)), wl = d.wt - d.wm, exN = P.ex.length;
   const toWalk = P.kind === "lift" && wl > 0;
-  pl.innerHTML = top() + `<div class="pbody"><div class="badge an" id="badge"><i>${ic("check")}</i></div><div class="done-t an"><h2>Xong ${P.kind === "mini" ? "mini" : "buổi"}!</h2><p>${P.title} · tuần ${P.w}</p></div>
+  pl.innerHTML = top() + `<div class="pbody"><div class="badge an" id="badge"><i>${ic("check")}</i></div><div class="done-t an"><h2>Xong ${P.kind === "mini" ? "mini" : "buổi"}!</h2><p>${P.title}, tuần ${P.w}</p></div>
  <div class="dstats an"><div><b>${P.sp.length}</b><span>set</span></div><div><b>${mins}</b><span>phút</span></div><div><b>${exN}</b><span>bài</span></div></div>
  ${toWalk ? `<div class="wsug an">${ic("walk")}<span>Tiếp theo: incline walk <b>${wl} phút</b>, incline ${incl(P.w)}, 4,5–5,5 km/h.</span></div>` : ""}</div>
  <div class="pfoot">${toWalk ? `<button class="pbig walkbtn press an" data-pa="towalk">${ic("walk")}Incline Walk ${wl}' ngay</button>` : ""}<div class="prow one an"><button class="gbtn press" data-pa="close">Về trang chính</button></div></div>`;
@@ -398,14 +399,14 @@ pl.addEventListener("click", e => {
       const el = tot - l, mi = Math.floor(el / 60) + 1, inMin = 60 - el % 60;
       if (mi !== lastMin) { lastMin = mi; beep(880, .25); buzz(150); }
       setRing(inMin, 60, inMin === 60);
-      const lb = $("rl"); if (lb) lb.textContent = `Minute ${Math.min(mi, e2.emom)}/${e2.emom} · ${mi % 2 ? "Pull-Up" : "Dip"}`;
+      const lb = $("rl"); if (lb) lb.textContent = `Minute ${Math.min(mi, e2.emom)}/${e2.emom}, ${mi % 2 ? "Pull-Up" : "Dip"}`;
     }, N.textFor("emom"));
     return;
   }
   if (a === "towalk") {
     const d = dayInfo(P.w, dayIdx(P.key)), t = Math.max(5, d.wt - d.wm);
-    P = { kind: "walk", key: P.key, c: "var(--walk)", t0: Date.now(), title: "Incline Walk", target: t, w: P.w };
-    pl.style.setProperty("--c", P.c); return showWalk();
+    P = { kind: "walk", key: P.key, c: "var(--walk)", on: "var(--on-walk)", t0: Date.now(), title: "Incline Walk", target: t, w: P.w };
+    pl.style.setProperty("--c", P.c); pl.style.setProperty("--on", P.on); return showWalk();
   }
   if (a === "wstart") {
     if (!P.started) {

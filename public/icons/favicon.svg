@@ -1,12 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FF8A3D"/>
-      <stop offset="1" stop-color="#EE3456"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="#0B0B10"/>
-  <circle cx="256" cy="256" r="150" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width="44"/>
-  <circle cx="256" cy="256" r="150" fill="none" stroke="url(#g)" stroke-width="44" stroke-linecap="round" stroke-dasharray="942.5" stroke-dashoffset="236" transform="rotate(-90 256 256)"/>
-  <text x="256" y="300" text-anchor="middle" font-family="Inter,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="128" font-weight="800" letter-spacing="-6" fill="#fff">12</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" >
+<rect width="512" height="512" rx="112" fill="#0F1113"/>
+<g transform="translate(256 256) scale(1) translate(-256 -256)">
+<circle cx="256" cy="256" r="196" fill="#FF4B52"/>
+<circle cx="256" cy="256" r="118" fill="#0F1113"/>
+<text x="256" y="304" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-size="150" font-weight="800" fill="#F0EFEA">12</text></g></svg>

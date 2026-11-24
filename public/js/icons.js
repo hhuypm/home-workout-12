@@ -27,14 +27,3 @@ const IP = {
 };
 
 export const ic = (n, c = "") => `<svg viewBox="0 0 24 24" class="ic ${c}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IP[n]}</svg>`;
-
-const trackCol = c => `color-mix(in srgb,${c} 18%,transparent)`;
-
-/** Progress ring pieces (track + arc) for an SVG rotated −90°. */
-export function arc(cx, r, sw, pct, col, extra = "") {
-  const C = 2 * Math.PI * r, p = Math.max(0, Math.min(1, pct));
-  return `<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke-width="${sw}" style="stroke:${trackCol(col)}"/>` +
-    (p > 0 ? `<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - p)).toFixed(2)}" style="stroke:${col}" ${extra}/>` : "");
-}
-
-export const miniRing = (pct, col, label, sw = 6) => `<div class="mring"><svg viewBox="0 0 52 52">${arc(26, 22, sw, pct, col)}</svg>${label != null ? `<b>${label}</b>` : ""}</div>`;
