@@ -82,7 +82,7 @@ function renderToday() {
     const pct = d.L.dn / d.L.tot, done = d.L.dn >= d.L.tot, ex = liftEx(d.k), sv = st.sets[d.key] || {};
     const note = dl(selW) ? "Deload week: đã giảm ½ số set" : selW <= 2 ? "Adaptation: RPE 7, còn 3 reps in reserve" : "";
     colA += `<div class="hero" style="--g:${s.g};--c:${s.deep};--cdeep:${s.deep}"><div class="htop"><span class="itile">${ic(s.ic)}</span><span>Strength · ${s.dur}</span></div><h2>${s.full}</h2>
-   <div class="chips"><span>${ex.length} bài</span><span>${d.L.tot} set</span>${ex.some(e => e.ss) ? `<span>Superset</span>` : ""}</div>${note ? `<p class="hnote">${note}</p>` : ""}
+   <div class="chips"><span>${ex.length} bài</span><span>${d.L.tot} set</span>${timeOf(d.key, "lift") ? `<span>Đã tập ${fmtDur(timeOf(d.key, "lift"))}</span>` : ""}${ex.some(e => e.ss) ? `<span>Superset</span>` : ""}</div>${note ? `<p class="hnote">${note}</p>` : ""}
    <div class="hprog"><div class="hbar"><i style="width:${pct * 100}%"></i></div><div class="hrow"><span>${d.L.dn}/${d.L.tot} set</span><span>${Math.round(pct * 100)}%</span></div></div>
    <button class="cta press" data-play="lift">${done ? ic("check") + "Đã xong · xem lại" : ic("play") + (d.L.dn ? `Tiếp tục · set ${d.L.dn + 1}/${d.L.tot}` : "Bắt đầu tập")}</button>${!done ? `<button class="ghost press" data-fill="lift">Đánh dấu đã xong cả buổi</button>` : ""}${d.L.dn && !done ? `<button class="ghost press" data-reset="lift">Làm lại từ đầu</button>` : ""}</div>`;
     const row = (e, j) => {
@@ -104,7 +104,7 @@ function renderToday() {
     colB += `<div class="sh"><h2>Thêm hôm nay</h2></div>`;
   }
   const mx = exFor("mini", d.k), mp = d.M.tot ? d.M.dn / d.M.tot : 0;
-  colB += `<div class="card" style="--c:var(--mini)"><div class="ch"><span class="itile">${ic("bolt")}</span><div><h3>Mini Circuit · 10 phút</h3><p>3 rounds${d.k === "push" || d.k === "upper" ? ", chỉ core" : ", Push-Up + core"}</p></div>${miniRing(mp, "var(--mini)", d.M.dn + "/" + d.M.tot)}</div>
+  colB += `<div class="card" style="--c:var(--mini)"><div class="ch"><span class="itile">${ic("bolt")}</span><div><h3>Mini Circuit · 10 phút</h3><p>3 rounds${d.k === "push" || d.k === "upper" ? ", chỉ core" : ", Push-Up + core"}${timeOf(d.key, "mini") ? ", đã tập " + fmtDur(timeOf(d.key, "mini")) : ""}</p></div>${miniRing(mp, "var(--mini)", d.M.dn + "/" + d.M.tot)}</div>
   <ul class="mini-l">${mx.map(m => `<li><span>${m.n}</span><b>3 × ${m.r}</b></li>`).join("")}</ul>
   <button class="btn dark press" data-play="mini">${d.M.dn >= d.M.tot ? ic("check") + "Đã xong · xem lại" : ic("play") + (d.M.dn ? "Làm tiếp" : "Start Mini Circuit")}</button>${d.M.dn < d.M.tot ? `<button class="mark press" data-fill="mini">Đánh dấu đã xong</button>` : ""}</div>
   <div class="card note" style="--c:${ph.c}"><span class="itile">${ic("route")}</span><div><b>Chặng ${PH.indexOf(ph) + 1} · ${ph.t}</b><p>${ph.p}</p></div></div>`;
@@ -140,6 +140,17 @@ function renderGoals() {
   <div class="goals">${rows.map(r => `<div class="goal${r[6] ? " ok" : ""}" style="--c:${r[1]}"><span class="itile">${ic(r[6] ? "check" : r[0])}</span><div class="gm"><b>${r[2]}</b><span>${r[3]}</span><div class="bar"><i style="width:${Math.min(100, r[4] * 100)}%"></i></div></div><div class="gv">${r[5]}</div></div>`).join("")}</div>`;
 }
 
+function renderTime() {
+  let week = 0, total = 0, sessions = 0, lift = 0, longest = 0;
+  for (let w = 1; w <= WEEKS; w++) for (let i = 0; i < 7; i++) {
+    const t = st.time[iso(dateOf(w, i))]; if (!t) continue;
+    const l = +t.lift || 0, m = +t.mini || 0; total += l + m; if (w === wNow) week += l + m;
+    if (l > 0) { sessions++; lift += l; longest = Math.max(longest, l); }
+  }
+  $("timeCard").innerHTML = `<h2 class="ct">Thời gian tập</h2><p class="cs">Tính từ lúc bắt đầu buổi, không tính lúc tạm dừng. Gồm buổi tạ và Mini Circuit.</p>` + (total
+    ? `<div class="trio timecell"><div><small>Tuần này</small><b>${fmtDur(week)}</b></div><div><small>Tổng cộng</small><b>${fmtDur(total)}</b></div><div><small>TB mỗi buổi tạ</small><b>${sessions ? fmtDur(lift / sessions) : "–"}</b></div></div>${longest ? `<p class="sub" style="margin:10px 0 0">Buổi tạ dài nhất: ${fmtDur(longest)}</p>` : ""}`
+    : `<p class="sub" style="margin:0">Chưa có dữ liệu. Thời gian được lưu từ lần tập tới: tạm dừng hoặc thoát thì lưu, quay lại thì đếm tiếp.</p>`);
+}
 function renderLv() {
   const groups = LIFT.map(k => ({ k, items: S[k].ex.map((_, j) => k + "-" + j).filter(pk => PL[pk]) }));
   const rc = Object.keys(PL).filter(ready).length;
@@ -154,7 +165,7 @@ function renderLv() {
 }
 
 function renderProg() {
-  renderGoals(); renderLv();
+  renderGoals(); renderTime(); renderLv();
   let Ls = 0, M = 0, W = 0, WT = 0, rows = "";
   for (let w = 1; w <= WEEKS; w++) {
     const g = L.weekSummary(st, w);
@@ -241,6 +252,35 @@ function setRing(left, dur, jump) {
 /* ================= player ================= */
 let P = null, clockId = null, wake = null;
 const pl = $("pl");
+
+/* ---- workout clock: runs only while it is running; pausing, closing or leaving saves it, coming back carries on ---- */
+const AWAY_MS = 10 * 60 * 1000;            // away from the app longer than this → the clock is paused at the moment you left
+const timeOf = (key, kind) => ((st.time && st.time[key]) || {})[kind] || 0;
+const hms = sec => { sec = Math.max(0, Math.floor(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), q = sec % 60, p2 = n => String(n).padStart(2, "0"); return h ? `${h}:${p2(m)}:${p2(q)}` : `${m}:${p2(q)}`; };
+const fmtDur = sec => { if (!(sec > 0)) return "–"; const m = Math.max(1, Math.round(sec / 60)); return m >= 60 ? `${Math.floor(m / 60)} giờ ${m % 60} p` : `${m} phút`; };
+const elapsedMs = () => P.acc + (P.seg ? Date.now() - P.seg : 0);
+function saveTime(quiet) {
+  if (!P || !P.timed) return;
+  const sec = Math.round(elapsedMs() / 1000), cur = (st.time[P.key] = st.time[P.key] || {});
+  if (cur[P.kind] === sec || (!sec && !cur[P.kind])) return;
+  cur[P.kind] = sec;
+  quiet ? store.saveQuiet(st) : save();   // quiet = just keep it safe on this device, don't announce every few seconds to sync
+}
+function paintClock() {
+  const w = $("pclockw"); if (!w || !P || !P.timed || P.finished) return;
+  w.classList.toggle("paused", !P.seg);
+  w.innerHTML = ic(P.seg ? "timer" : "play") + `<span id="pclock">${hms(elapsedMs() / 1000)}</span>` + clockHint();
+}
+function pauseClock() { if (!P || !P.timed || !P.seg) return; P.acc = elapsedMs(); P.seg = null; saveTime(); paintClock(); }
+function resumeClock() { if (!P || !P.timed || P.seg || P.finished) return; P.seg = Date.now(); paintClock(); }
+function tickClock() {
+  if (!P) return;
+  const c = $("pclock");
+  if (P.timed) {
+    if (c) c.textContent = hms(elapsedMs() / 1000);
+    if (P.seg && Date.now() - (P.lastSave || 0) > 15000) { P.lastSave = Date.now(); saveTime(true); }   // a crash loses at most ~15 s
+  } else if (c) c.textContent = mmss(Math.floor((Date.now() - P.t0) / 1000));
+}
 async function keepAwake(on) {
   try {
     if (on && navigator.wakeLock) wake = await navigator.wakeLock.request("screen");
@@ -262,7 +302,7 @@ function openPlay(kind) {
   const d = dayInfo(selW, selI), sp = steps(kind, d.k, selW), sv = setsOf(kind, d.key);
   const found = sp.findIndex(x => x.q >= (sv[x.j] || 0));
   const review = found < 0;                    // already finished: show the summary, never touch the saved sets
-  P = { kind, k: d.k, w: selW, key: d.key, sp, idx: review ? sp.length : found, review, ex: exFor(kind, d.k), c: kind === "mini" ? "var(--mini)" : S[d.k].c, t0: Date.now(), title: kind === "mini" ? "Mini Circuit" : S[d.k].full };
+  P = { kind, k: d.k, w: selW, key: d.key, sp, idx: review ? sp.length : found, review, timed: true, finished: review, acc: timeOf(d.key, kind) * 1000, seg: review ? null : Date.now(), ex: exFor(kind, d.k), c: kind === "mini" ? "var(--mini)" : S[d.k].c, t0: Date.now(), title: kind === "mini" ? "Mini Circuit" : S[d.k].full };
   A.wake(); openShell(); review ? showDone() : showWork();
 }
 function openWalk() {
@@ -278,9 +318,10 @@ function openShell() {
   P.openerSel = openerSel(document.activeElement); setInert(true);
   pl.style.setProperty("--c", P.c); pl.classList.add("on"); document.body.style.overflow = "hidden"; keepAwake(true);
   clearInterval(clockId);
-  clockId = setInterval(() => { const c = $("pclock"); if (c && P) c.textContent = mmss(Math.floor((Date.now() - P.t0) / 1000)); }, 500);
+  clockId = setInterval(tickClock, 500);
 }
 function closePlay() {
+  pauseClock();
   const back = P && P.openerSel;
   T = null; P = null; pl.classList.remove("on", "rest"); pl.innerHTML = ""; document.body.style.overflow = ""; keepAwake(false); clearInterval(clockId);
   setInert(false);
@@ -288,10 +329,16 @@ function closePlay() {
   focusSel(back);
   if (Sync.enabled()) Sync.syncNow();
 }
+/* a button while the workout is running or paused; a plain label once the session is finished and for walks */
+/* the visible time is part of the button's name; the hidden text says what it does */
+const clockHint = () => `<span class="vh">, đồng hồ tập ${P.seg ? "đang chạy. Chạm để tạm dừng" : "đang tạm dừng. Chạm để tiếp tục"}</span>`;
+const clockChip = () => P.timed && !P.finished
+  ? `<button class="clock press${P.seg ? "" : " paused"}" id="pclockw" data-pa="tclock">${ic(P.seg ? "timer" : "play")}<span id="pclock">${hms(elapsedMs() / 1000)}</span>${clockHint()}</button>`
+  : `<div class="clock" id="pclockw">${ic("timer")}<span id="pclock">${P.timed ? hms(elapsedMs() / 1000) : mmss(Math.floor((Date.now() - P.t0) / 1000))}</span></div>`;
 const top = () => {
   const x = P.sp ? P.sp[Math.min(P.idx, P.sp.length - 1)] : null;
   const sub = P.kind === "walk" ? `Target ${P.target} phút` : x && P.idx < P.sp.length ? `Bài ${x.j + 1}/${P.ex.length} · set ${Math.min(P.idx + 1, P.sp.length)}/${P.sp.length}` : `${P.sp.length}/${P.sp.length} set`;
-  return `<div class="ptop"><button class="gx press" data-pa="close" aria-label="Đóng">${ic("x")}</button><div class="t"><b>${P.title}</b><span>${sub}</span></div><div class="clock" id="pclockw">${ic("timer")}<span id="pclock">${mmss(Math.floor((Date.now() - P.t0) / 1000))}</span></div></div>${P.sp ? `<div class="segs">${P.sp.map((x, i) => `<i class="${i < P.idx ? "on" : i === P.idx ? "cur" : ""}"></i>`).join("")}</div>` : ""}`;
+  return `<div class="ptop"><button class="gx press" data-pa="close" aria-label="Đóng">${ic("x")}</button><div class="t"><b>${P.title}</b><span>${sub}</span></div>${clockChip()}</div>${P.sp ? `<div class="segs">${P.sp.map((x, i) => `<i class="${i < P.idx ? "on" : i === P.idx ? "cur" : ""}"></i>`).join("")}</div>` : ""}`;
 };
 const say = text => { const l = $("live"); if (!l) return; l.textContent = ""; setTimeout(() => { l.textContent = text; }, 60); };
 const anim = () => { pl.scrollTop = 0; const f = pl.querySelector(".pbig") || pl.querySelector('[data-pa="close"]'); if (f) f.focus({ preventScroll: true }); };
@@ -339,7 +386,9 @@ function showRest(sec, prev) {
 }
 function showDone() {
   T = null; pl.classList.remove("rest");
-  const mins = P.review ? "–" : Math.max(1, Math.round((Date.now() - P.t0) / 60000)), d = dayInfo(P.w, dayIdx(P.key)), wl = d.wt - d.wm, exN = P.ex.length;
+  if (!P.review) pauseClock();                 // finishing stops and saves the clock
+  P.finished = true;
+  const secs = timeOf(P.key, P.kind), mins = secs ? Math.max(1, Math.round(secs / 60)) : "–", d = dayInfo(P.w, dayIdx(P.key)), wl = d.wt - d.wm, exN = P.ex.length;
   const toWalk = P.kind === "lift" && wl > 0;
   pl.innerHTML = top() + `<div class="pbody"><div class="badge an" id="badge"><i>${ic("check")}</i></div><div class="done-t an"><h2>Xong ${P.kind === "mini" ? "mini" : "buổi"}!</h2><p>${P.title} · tuần ${P.w}</p></div>
  <div class="dstats an"><div><b>${P.sp.length}</b><span>set</span></div><div><b>${mins}</b><span>phút</span></div><div><b>${exN}</b><span>bài</span></div></div>
@@ -376,6 +425,8 @@ pl.addEventListener("click", e => {
   const b = e.target.closest("[data-pa]");
   if (!b || !P || b.disabled) return;
   const a = b.dataset.pa;
+  if (a === "tclock") { if (P.seg) { pauseClock(); say("Đã tạm dừng đồng hồ tập"); } else { resumeClock(); say("Đồng hồ tập đang chạy"); } return; }
+  if (a !== "close" && P.timed && !P.seg && !P.finished) resumeClock();      // any action: you are back at it
   if (a === "close") { if (P.kind === "walk" && P.started) logWalk(); return closePlay(); }
   if (a === "done") {
     if (P.busy) return;
@@ -456,7 +507,7 @@ document.querySelector(".app").addEventListener("click", e => {
       save(); renderToday(); renderProg(); focusSel(kind === "mini" ? '[data-play="mini"]' : '[data-play="lift"]');
     });
   }
-  const rb = t.closest("[data-reset]"); if (rb) { const d = dayInfo(selW, selI); return void confirmSheet(`Làm lại ${S[d.k].full} từ đầu?`, "Các set đã đánh dấu trong buổi này sẽ bị xoá.", "Làm lại").then(ok => { if (!ok) return; st.sets[d.key] = {}; save(); renderToday(); focusSel('[data-play="lift"]'); }); }
+  const rb = t.closest("[data-reset]"); if (rb) { const d = dayInfo(selW, selI); return void confirmSheet(`Làm lại ${S[d.k].full} từ đầu?`, "Các set đã đánh dấu và thời gian tập của buổi này sẽ bị xoá.", "Làm lại").then(ok => { if (!ok) return; st.sets[d.key] = {}; if (st.time[d.key]) delete st.time[d.key].lift; save(); renderToday(); focusSel('[data-play="lift"]'); }); }
   const up = t.closest("[data-up]");
   if (up) {
     e.preventDefault();
@@ -651,8 +702,15 @@ if (swOk) {
 try { navigator.storage?.persist?.(); } catch (e) {}
 
 /* Coming back to the app: re-take the wake lock, and move to the new day after midnight. */
+addEventListener("pagehide", () => { if (P && P.timed && P.seg) saveTime(); });
 document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") { if (P && P.timed && P.seg) { P.hiddenAt = Date.now(); saveTime(); } return; }
   if (document.visibilityState !== "visible") return;
+  if (P && P.timed && P.hiddenAt) {
+    const away = Date.now() - P.hiddenAt;
+    if (P.seg && away > AWAY_MS) { P.acc += P.hiddenAt - P.seg; P.seg = null; paintClock(); say("Đồng hồ tập đã tạm dừng vì bạn rời app lâu. Chạm đồng hồ để tiếp tục."); }
+    P.hiddenAt = null;
+  }
   N.clear();
   if (Sync.enabled() && !P) Sync.syncNow();
   if (P) return void keepAwake(true);

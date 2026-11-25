@@ -64,5 +64,6 @@ Lưu trong `localStorage`, key `player12`:
 | `lvlD` / `lvlH` | ngày đổi level gần nhất / lịch sử lên level |
 | `tests` | Max Test tuần 1 (`a`) và tuần 12 (`b`) |
 | `body` | `[{d, kg, w}]` cân nặng và vòng eo |
+| `time` | `{ngày: {lift, mini}}` giây đã tập trong player, dừng hoặc thoát thì lưu, quay lại thì đếm tiếp |
 
 Dữ liệu chỉ nằm trên một máy, một trình duyệt. Tab Tiến độ có nút **Xuất sao lưu** / **Khôi phục** (file JSON) để giữ bản dự phòng hoặc chuyển sang máy khác.

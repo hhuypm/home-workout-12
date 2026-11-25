@@ -135,3 +135,12 @@ test("backup round-trips and rejects foreign files", () => {
 });
 
 function pick({ curW, wNow, dNow, inProg }) { return { curW, wNow, dNow, inProg }; }
+
+test("saved data from before the clock existed still loads, with an empty time log", () => {
+  const old = { sets: { "2026-11-24": { 0: 4 } }, mini: {}, walk: {}, tests: {}, body: [], lvl: {}, hit: {}, lvlD: {}, lvlH: {} };   // no `time`
+  const st = normalize(old);
+  assert.deepEqual(st.time, {});
+  assert.deepEqual(importJSON(JSON.stringify(old)).time, {});
+  assert.equal(isEmpty(normalize({ time: { "2026-11-24": { lift: 0 } } })), true, "an empty entry is not data");
+  assert.equal(isEmpty(normalize({ time: { "2026-11-24": { lift: 60 } } })), false);
+});

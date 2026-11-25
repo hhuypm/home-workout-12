@@ -1,7 +1,7 @@
 /* Saved state: one JSON object in localStorage, plus backup export / import. */
 
 export const KEY = "player12";
-const OBJ = ["sets", "mini", "walk", "tests", "lvl", "hit", "lvlD", "lvlH"];
+const OBJ = ["sets", "mini", "walk", "tests", "lvl", "hit", "lvlD", "lvlH", "time"];
 
 /**
  * Shape:
@@ -14,8 +14,9 @@ const OBJ = ["sets", "mini", "walk", "tests", "lvl", "hit", "lvlD", "lvlH"];
  *  hit   {slot: [isoDate]}                days every set hit top reps
  *  lvlD  {slot: isoDate}                  date of the last level change
  *  lvlH  {slot: [{d, to}]}                level-up history
+ *  time  {isoDate: {lift, mini}}          seconds spent in the strength / mini-circuit player that day
  */
-export const blank = () => ({ sets: {}, mini: {}, walk: {}, tests: {}, body: [], lvl: {}, hit: {}, lvlD: {}, lvlH: {} });
+export const blank = () => ({ sets: {}, mini: {}, walk: {}, tests: {}, body: [], lvl: {}, hit: {}, lvlD: {}, lvlH: {}, time: {} });
 
 /** Coerce anything into a valid state object (bad or missing parts become empty). */
 export function normalize(raw) {

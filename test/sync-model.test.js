@@ -6,7 +6,8 @@ import { blank, normalize } from "../public/js/store.js";
 const sample = () => normalize({
   sets: { "2026-11-24": { 0: 4, 1: 4, 2: 1 } }, mini: { "2026-11-24": { 0: 3 } }, walk: { "2026-11-24": 12 },
   tests: { pu: { a: 8, b: "" }, dp: { a: 10, b: 14 } }, body: [{ d: "2026-11-29", kg: 70.5, w: null }],
-  lvl: { "pull-0": 1 }, hit: { "push-0": ["2026-11-24", "2026-11-25"] }, lvlD: { "pull-0": "2026-11-26" }, lvlH: { "pull-0": [{ d: "2026-11-26", to: 1 }] }
+  lvl: { "pull-0": 1 }, hit: { "push-0": ["2026-11-24", "2026-11-25"] }, lvlD: { "pull-0": "2026-11-26" }, lvlH: { "pull-0": [{ d: "2026-11-26", to: 1 }] },
+  time: { "2026-11-24": { lift: 2710, mini: 480 } }
 });
 const norm = st => JSON.stringify(flatten(st), Object.keys(flatten(st)).sort());
 
@@ -14,7 +15,7 @@ test("flatten → unflatten round-trips the app state", () => {
   const st = sample();
   const back = unflatten(initMeta(st));
   assert.equal(norm(back), norm(st));
-  assert.deepEqual(back.sets, st.sets); assert.deepEqual(back.hit, st.hit); assert.deepEqual(back.lvlH, st.lvlH);
+  assert.deepEqual(back.sets, st.sets); assert.deepEqual(back.hit, st.hit); assert.deepEqual(back.lvlH, st.lvlH); assert.deepEqual(back.time, st.time);
   assert.deepEqual(back.tests, { pu: { a: 8 }, dp: { a: 10, b: 14 } }, "empty test cells are dropped");
   assert.deepEqual(unflatten(initMeta(blank())), blank());
 });
@@ -114,4 +115,18 @@ test("sync codes: 26 symbols, readable, tolerant of typing mistakes", () => {
   assert.equal(parseCode("short"), null); assert.equal(parseCode(""), null); assert.equal(parseCode(c + "A"), null);
   assert.match(genDevice(), /^[0-9a-f]{16}$/);
   assert.match(fmtCode(c), /^(\w{4}-){6}\w{2}$/);
+});
+
+test("workout time is a cell like any other: it syncs, and a longer time wins a tie", () => {
+  const st = sample();
+  assert.equal(flatten(st)["time/2026-11-24/lift"], 2710);
+  const m0 = initMeta(st);
+  st.time["2026-11-24"].lift = 3000;                                   // came back and kept going
+  const m1 = updateMeta(m0, st, 900);
+  assert.deepEqual(m1["time/2026-11-24/lift"], { t: 900, v: 3000 });
+  assert.equal(unflatten(mergeMeta(m0, m1)).time["2026-11-24"].lift, 3000);
+  delete st.time["2026-11-24"].mini;                                    // "Làm lại" style removal
+  assert.deepEqual(updateMeta(m1, st, 1000)["time/2026-11-24/mini"], { t: 1000, v: null });
+  assert.deepEqual(mergeMeta({ k: { t: 5, v: 120 } }, { k: { t: 5, v: 200 } }).k.v, 200);
+  assert.deepEqual(unflatten(initMeta(blank())).time, {});
 });

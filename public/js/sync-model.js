@@ -11,6 +11,7 @@ export function flatten(st) {
   const c = {};
   for (const kind of ["sets", "mini"]) for (const [d, o] of Object.entries(st[kind] || {})) for (const [j, n] of Object.entries(o || {})) if (+n > 0) c[`${kind}/${d}/${j}`] = +n;
   for (const [d, m] of Object.entries(st.walk || {})) if (+m > 0) c[`walk/${d}`] = +m;
+  for (const [d, o] of Object.entries(st.time || {})) for (const [k, n] of Object.entries(o || {})) if (+n > 0) c[`time/${d}/${k}`] = +n;
   for (const [id, t] of Object.entries(st.tests || {})) for (const s of ["a", "b"]) { const v = t && t[s]; if (v !== undefined && v !== null && v !== "" && Number.isFinite(+v)) c[`tests/${id}/${s}`] = +v; }
   for (const r of st.body || []) if (r && r.d) c[`body/${r.d}`] = { kg: r.kg ?? null, w: r.w ?? null };
   for (const [k, n] of Object.entries(st.lvl || {})) if (+n > 0) c[`lvl/${k}`] = +n;
@@ -22,12 +23,13 @@ export function flatten(st) {
 
 /** meta ({key: {t, v}}) -> state, skipping tombstones. */
 export function unflatten(meta) {
-  const st = { sets: {}, mini: {}, walk: {}, tests: {}, body: [], lvl: {}, hit: {}, lvlD: {}, lvlH: {} };
+  const st = { sets: {}, mini: {}, walk: {}, tests: {}, body: [], lvl: {}, hit: {}, lvlD: {}, lvlH: {}, time: {} };
   for (const [key, m] of Object.entries(meta || {})) {
     if (!m || m.v === null || m.v === undefined) continue;
     const [kind, a, b, c] = key.split("/"), v = m.v;
     if (kind === "sets" || kind === "mini") (st[kind][a] = st[kind][a] || {})[b] = v;
     else if (kind === "walk") st.walk[a] = v;
+    else if (kind === "time") (st.time[a] = st.time[a] || {})[b] = v;
     else if (kind === "tests") (st.tests[a] = st.tests[a] || {})[b] = v;
     else if (kind === "body") st.body.push({ d: a, kg: v.kg ?? null, w: v.w ?? null });
     else if (kind === "lvl") st.lvl[a] = v;
