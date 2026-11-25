@@ -267,7 +267,9 @@ td.n input{width:4.6em;text-align:right;padding:8px 10px}
 .segs i{flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
 .segs i.on{background:var(--c)}
 .segs i.cur{background:linear-gradient(90deg,var(--c) 0 35%,rgba(255,255,255,.22) 35%)}
-.pbody{flex:1;display:flex;flex-direction:column;justify-content:center;padding:18px 0 14px}
+.pbody{flex:1;display:flex;flex-direction:column;padding:18px 0 14px}
+.pbody>:first-child{margin-top:auto}
+.pbody>:last-child{margin-bottom:auto}
 .pk{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .tag{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:99px;background:var(--glass);font-size:13px;font-weight:600;color:var(--ink2);white-space:nowrap}
 .tag.c{background:color-mix(in srgb,var(--c) 18%,transparent);color:color-mix(in srgb,var(--c) 62%,var(--ink))}
@@ -528,7 +530,7 @@ div.clock{cursor:default;min-height:36px}
   .mframes{aspect-ratio:auto;height:clamp(240px,37vh,540px);background:#0d0d10}
   .mfig figcaption{font-size:14px}
   .pctl .pbody{overflow-y:auto;padding-top:0}
-  .pctl .pfoot{position:static;padding-bottom:0;background:none}
+  .pctl .pfoot{position:sticky;bottom:0;z-index:2;background:#060608;padding:8px 0 0}
 }
 /* very wide screens (desktop, big tablets in landscape): exercises | photo | controls */
 @media (min-width:1400px){
@@ -544,4 +546,66 @@ div.clock{cursor:default;min-height:36px}
 @media (max-width:899px){
   #pl{padding-bottom:0}
   .pfoot{position:sticky;bottom:0;z-index:2;background:#060608;padding:8px 0 max(16px,env(safe-area-inset-bottom))}
+}
+
+/* phones turned sideways, and any short window: photo fills the left, compact controls on the right, everything reachable */
+@media (min-width:600px) and (max-height:600px){
+  #pl{overflow:hidden;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:0}
+  #pl>.ptop,#pl>.segs,#pl>.pwrap{max-width:none}
+  .ptop{grid-template-columns:44px minmax(0,1fr) auto}
+  .gx{width:44px;height:44px}
+  .segs{margin-top:8px}
+  #pl>.pwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,.95fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"media ctl";gap:14px;padding:8px 0 max(8px,env(safe-area-inset-bottom));min-height:0}
+  .plist{display:none}
+  .pmedia{grid-area:media;display:flex;flex-direction:column;min-height:0;margin:0;overflow:visible}
+  .mtoggle{display:none}
+  .pmedia[data-open] .mbody{display:flex;flex-direction:column;flex:1;min-height:0;margin:0}
+  .mfig{flex:1;display:flex;flex-direction:column;min-height:0}
+  .mframes{flex:1;height:auto;min-height:0;aspect-ratio:auto;background:#0d0d10}
+  .mfig figcaption{display:none}
+  .mctl{margin-top:8px}
+  .mnone{flex:1;align-content:center}
+  .pctl{grid-area:ctl;min-height:0;overflow-y:auto}
+  .pctl .pbody{padding:4px 0 8px;overflow:visible;flex:none;min-height:min-content}
+  .pctl .pfoot{position:sticky;bottom:0;z-index:2;background:#060608;padding:8px 0 0}
+  .pk{gap:4px}.tag{height:26px;font-size:12.5px}
+  .pname{font-size:clamp(24px,4.4vw,32px);margin-top:6px}
+  .setbox{margin-top:2px}
+  .setn b{font-size:clamp(64px,24vh,104px)}.setn span{font-size:30px}
+  .setl small{margin-bottom:4px}
+  .reps{margin-top:8px;padding:10px 14px;border-radius:16px}
+  .reps .rv{font-size:20px}.reps .rv small{font-size:13px}
+  .reps .tip{margin-top:8px;padding-top:8px;font-size:13.5px}
+  .reps .how{display:none}
+  .hitb{margin-top:8px;padding:10px 12px}
+  .dtimer{margin-top:8px;padding:8px 8px 8px 14px}.dtimer b{font-size:40px}
+  .next{display:none}
+  .pbig{min-height:54px;font-size:17px;border-radius:16px}
+  .prow{margin-top:6px}.gbtn{min-height:44px}
+  .ring,.ring.sm{width:min(40vh,200px);margin-top:4px}
+  .ring .rt,.ring.sm .rt{font-size:clamp(44px,15vh,72px)}.ring .lb{font-size:13px;margin-top:2px}
+  .rest-h{margin-bottom:8px}
+  .ctrl{margin-top:10px;gap:14px}.cb{width:56px;height:56px;font-size:16px}.cb.main{width:64px;height:64px}
+  .winfo{margin-bottom:8px}
+}
+
+/* short landscape, second pass: one-row footer when there is width, smaller numbers so more of the set fits above it */
+@media (min-width:600px) and (max-height:600px){
+  #pl>.pwrap{grid-template-columns:minmax(0,1fr) minmax(320px,1fr)}
+  .setn b{font-size:clamp(48px,17vh,80px);line-height:.9}.setn span{font-size:24px}
+  .pname{font-size:clamp(22px,3.6vw,28px);margin-top:4px}
+  .ring,.ring.sm{width:min(34vh,170px)}
+  .ring .rt,.ring.sm .rt{font-size:clamp(36px,12vh,56px)}
+  .cb{width:48px;height:48px}.cb.main{width:56px;height:56px}.ctrl{margin-top:6px}
+  .pctl .pfoot{display:flex;flex-wrap:wrap;gap:8px;padding:6px 0 0}
+  .pctl .pfoot .pbig{flex:1 1 100%;min-height:48px;margin:0}
+  .pctl .pfoot .prow{flex:1 1 100%;margin:0}
+  .pctl .pfoot .nextc{display:none}
+}
+@media (min-width:820px) and (max-height:600px){
+  .pctl .pfoot{flex-wrap:nowrap;align-items:stretch}
+  .pctl .pfoot .pbig{flex:1 1 auto;min-width:0}
+  .pctl .pfoot .prow{flex:0 0 auto;display:flex;gap:8px}
+  .pctl .pfoot .prow .gbtn{padding:0 14px;white-space:nowrap}
+  .pctl .pfoot .prow.one{flex:0 0 auto}
 }
