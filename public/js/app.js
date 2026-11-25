@@ -84,7 +84,7 @@ function renderToday() {
     colA += `<div class="hero" style="--g:${s.g};--c:${s.deep};--cdeep:${s.deep}"><div class="htop"><span class="itile">${ic(s.ic)}</span><span>Strength · ${s.dur}</span></div><h2>${s.full}</h2>
    <div class="chips"><span>${ex.length} bài</span><span>${d.L.tot} set</span>${ex.some(e => e.ss) ? `<span>Superset</span>` : ""}</div>${note ? `<p class="hnote">${note}</p>` : ""}
    <div class="hprog"><div class="hbar"><i style="width:${pct * 100}%"></i></div><div class="hrow"><span>${d.L.dn}/${d.L.tot} set</span><span>${Math.round(pct * 100)}%</span></div></div>
-   <button class="cta press" data-play="lift">${done ? ic("check") + "Đã xong · xem lại" : ic("play") + (d.L.dn ? `Tiếp tục · set ${d.L.dn + 1}/${d.L.tot}` : "Bắt đầu tập")}</button>${d.L.dn ? `<button class="ghost press" data-reset="lift">Làm lại từ đầu</button>` : ""}</div>`;
+   <button class="cta press" data-play="lift">${done ? ic("check") + "Đã xong · xem lại" : ic("play") + (d.L.dn ? `Tiếp tục · set ${d.L.dn + 1}/${d.L.tot}` : "Bắt đầu tập")}</button>${!done ? `<button class="ghost press" data-fill="lift">Đánh dấu đã xong cả buổi</button>` : ""}${d.L.dn && !done ? `<button class="ghost press" data-reset="lift">Làm lại từ đầu</button>` : ""}</div>`;
     const row = (e, j) => {
       const n = effS(e.s, selW, j), dn = (sv[j] || 0) >= n;
       const sub = [e.r, e.sec ? "rest " + mmss(e.sec) : ""].filter(Boolean).join(" · ");
@@ -106,7 +106,7 @@ function renderToday() {
   const mx = exFor("mini", d.k), mp = d.M.tot ? d.M.dn / d.M.tot : 0;
   colB += `<div class="card" style="--c:var(--mini)"><div class="ch"><span class="itile">${ic("bolt")}</span><div><h3>Mini Circuit · 10 phút</h3><p>3 rounds${d.k === "push" || d.k === "upper" ? ", chỉ core" : ", Push-Up + core"}</p></div>${miniRing(mp, "var(--mini)", d.M.dn + "/" + d.M.tot)}</div>
   <ul class="mini-l">${mx.map(m => `<li><span>${m.n}</span><b>3 × ${m.r}</b></li>`).join("")}</ul>
-  <button class="btn dark press" data-play="mini">${d.M.dn >= d.M.tot ? ic("check") + "Đã xong · làm lại" : ic("play") + (d.M.dn ? "Làm tiếp" : "Start Mini Circuit")}</button></div>
+  <button class="btn dark press" data-play="mini">${d.M.dn >= d.M.tot ? ic("check") + "Đã xong · xem lại" : ic("play") + (d.M.dn ? "Làm tiếp" : "Start Mini Circuit")}</button>${d.M.dn < d.M.tot ? `<button class="mark press" data-fill="mini">Đánh dấu đã xong</button>` : ""}</div>
   <div class="card note" style="--c:${ph.c}"><span class="itile">${ic("route")}</span><div><b>Chặng ${PH.indexOf(ph) + 1} · ${ph.t}</b><p>${ph.p}</p></div></div>`;
   $("v-today").innerHTML = h + `<div class="tgrid"><div class="col">${colA}</div><div class="col">${colB}</div></div>`;
 }
@@ -260,10 +260,10 @@ function offerNotify() {
 function openPlay(kind) {
   offerNotify();
   const d = dayInfo(selW, selI), sp = steps(kind, d.k, selW), sv = setsOf(kind, d.key);
-  let idx = sp.findIndex(x => x.q >= (sv[x.j] || 0));
-  if (idx < 0) { Object.keys(sv).forEach(k => delete sv[k]); idx = 0; save(); }
-  P = { kind, k: d.k, w: selW, key: d.key, sp, idx, ex: exFor(kind, d.k), c: kind === "mini" ? "var(--mini)" : S[d.k].c, t0: Date.now(), title: kind === "mini" ? "Mini Circuit" : S[d.k].full };
-  A.wake(); openShell(); showWork();
+  const found = sp.findIndex(x => x.q >= (sv[x.j] || 0));
+  const review = found < 0;                    // already finished: show the summary, never touch the saved sets
+  P = { kind, k: d.k, w: selW, key: d.key, sp, idx: review ? sp.length : found, review, ex: exFor(kind, d.k), c: kind === "mini" ? "var(--mini)" : S[d.k].c, t0: Date.now(), title: kind === "mini" ? "Mini Circuit" : S[d.k].full };
+  A.wake(); openShell(); review ? showDone() : showWork();
 }
 function openWalk() {
   offerNotify();
@@ -339,13 +339,14 @@ function showRest(sec, prev) {
 }
 function showDone() {
   T = null; pl.classList.remove("rest");
-  const mins = Math.max(1, Math.round((Date.now() - P.t0) / 60000)), d = dayInfo(P.w, dayIdx(P.key)), wl = d.wt - d.wm, exN = P.ex.length;
+  const mins = P.review ? "–" : Math.max(1, Math.round((Date.now() - P.t0) / 60000)), d = dayInfo(P.w, dayIdx(P.key)), wl = d.wt - d.wm, exN = P.ex.length;
   const toWalk = P.kind === "lift" && wl > 0;
   pl.innerHTML = top() + `<div class="pbody"><div class="badge an" id="badge"><i>${ic("check")}</i></div><div class="done-t an"><h2>Xong ${P.kind === "mini" ? "mini" : "buổi"}!</h2><p>${P.title} · tuần ${P.w}</p></div>
  <div class="dstats an"><div><b>${P.sp.length}</b><span>set</span></div><div><b>${mins}</b><span>phút</span></div><div><b>${exN}</b><span>bài</span></div></div>
  ${toWalk ? `<div class="wsug an">${ic("walk")}<span>Tiếp theo: incline walk <b>${wl} phút</b>, incline ${incl(P.w)}, 4,5–5,5 km/h.</span></div>` : ""}</div>
  <div class="pfoot">${toWalk ? `<button class="pbig walkbtn press an" data-pa="towalk">${ic("walk")}Incline Walk ${wl}' ngay</button>` : ""}<div class="prow one an"><button class="gbtn press" data-pa="close">Về trang chính</button></div></div>`;
-  say("Xong buổi tập"); beep(660, .15); setTimeout(() => beep(990, .3), 180); buzz([60, 40, 60]); anim();
+  if (P.review) say("Buổi này đã xong"); else { say("Xong buổi tập"); beep(660, .15); setTimeout(() => beep(990, .3), 180); buzz([60, 40, 60]); }
+  anim();
 }
 function showWalk() {
   pl.classList.remove("rest"); P.walked = P.walked || 0;
@@ -445,6 +446,16 @@ document.querySelector(".app").addEventListener("click", e => {
   if (t.closest("[data-today]")) { selW = wNow; selI = dNow; return renderToday(); }
   const pb = t.closest("[data-play]"); if (pb) return openPlay(pb.dataset.play);
   if (t.closest("[data-walk]")) return openWalk();
+  const fl = t.closest("[data-fill]");
+  if (fl) {
+    const kind = fl.dataset.fill, d = dayInfo(selW, selI);
+    return void confirmSheet(kind === "mini" ? "Đánh dấu Mini Circuit đã xong?" : "Đánh dấu cả buổi đã xong?", "Dùng khi bạn đã tập xong nhưng chưa bấm từng set. Mọi set của buổi này được tính là đã làm.", "Đánh dấu").then(ok => {
+      if (!ok) return;
+      const sv = setsOf(kind, d.key);
+      for (const x of steps(kind, d.k, selW)) sv[x.j] = Math.max(sv[x.j] || 0, x.n);
+      save(); renderToday(); renderProg(); focusSel(kind === "mini" ? '[data-play="mini"]' : '[data-play="lift"]');
+    });
+  }
   const rb = t.closest("[data-reset]"); if (rb) { const d = dayInfo(selW, selI); return void confirmSheet(`Làm lại ${S[d.k].full} từ đầu?`, "Các set đã đánh dấu trong buổi này sẽ bị xoá.", "Làm lại").then(ok => { if (!ok) return; st.sets[d.key] = {}; save(); renderToday(); focusSel('[data-play="lift"]'); }); }
   const up = t.closest("[data-up]");
   if (up) {
