@@ -461,3 +461,87 @@ input[aria-invalid=true]{border-color:var(--push);box-shadow:0 0 0 1px var(--pus
 div.clock{cursor:default;min-height:36px}
 .clock.paused{color:color-mix(in srgb,var(--mini) 70%,var(--ink));box-shadow:inset 0 0 0 1.5px currentColor}
 .timecell b{white-space:normal;line-height:1.2}
+
+/* ---- player: exercise photo, exercise list, controls ---- */
+#pl>.pwrap{flex:1;display:flex;flex-direction:column}
+.pctl{display:flex;flex-direction:column;flex:1}
+.plist{display:none}
+.pmedia{margin-top:12px}
+.mtoggle{appearance:none;border:0;width:100%;min-height:48px;border-radius:16px;background:var(--glass);color:var(--ink);font:600 15px var(--font);display:flex;align-items:center;gap:10px;padding:0 14px;cursor:pointer;text-align:left}
+.mtoggle .ic{width:18px;height:18px;color:var(--c)}
+.mtoggle span{flex:1}
+.mtoggle i{font-style:normal;color:var(--ink2);font-size:14px}
+.pmedia[data-open="0"] .mbody{display:none}
+.mbody{margin-top:10px}
+.mfig{margin:0}
+.mframes{position:relative;aspect-ratio:3/2;border-radius:18px;overflow:hidden;background:#000}
+.mframes img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.mfig .f1{opacity:0}
+.mfig[data-mode="auto"] .f1{animation:mflip 2.6s ease-in-out infinite}
+.mfig[data-mode="1"] .f1{opacity:1}
+@keyframes mflip{0%,30%{opacity:0}45%,80%{opacity:1}95%,100%{opacity:0}}
+.mfig figcaption{margin-top:8px;font-size:13px;color:var(--ink2);line-height:1.4}
+.mctl{display:flex;gap:8px;margin-top:10px}
+.mctl button{flex:1;appearance:none;border:0;min-height:44px;border-radius:14px;background:var(--glass);color:var(--ink2);font:600 14px var(--font);cursor:pointer}
+.mctl button[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--c)}
+.mnone{display:grid;justify-items:center;text-align:center;gap:6px;padding:28px 18px;border-radius:18px;background:var(--glass);color:var(--ink2)}
+.mnone .ic{width:44px;height:44px;color:var(--c)}
+.mnone p{margin:0;font-size:15px;line-height:1.45}
+.mnone b{color:var(--ink);font-size:18px}
+.plh{margin:0 0 8px;font-size:13px;color:var(--ink2);font-weight:600}
+.plist ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pli{appearance:none;border:0;width:100%;text-align:left;display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;min-height:56px;border-radius:16px;background:var(--glass);color:var(--ink);cursor:pointer;font-family:var(--font)}
+.pli.cur{box-shadow:inset 0 0 0 2px var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.pli.fin{opacity:.62;cursor:default}
+.pli .pn{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;background:rgba(255,255,255,.12)}
+.pli.cur .pn{background:var(--c);color:#0A0A0C}
+.pli .pn .ic{width:14px;height:14px}
+.pli .pm b{display:block;font-size:14.5px;line-height:1.25;font-weight:650}
+.pli .pm small{display:block;font-size:12.5px;color:var(--ink2);margin-top:2px}
+.pdots{display:flex;gap:4px;flex-wrap:wrap;max-width:64px;justify-content:flex-end}
+.pdots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.22)}
+.pdots i.on{background:var(--c)}
+
+/* tablet, portrait: photo on top of the controls, exercises as a row of chips */
+@media (min-width:700px) and (max-width:899px){
+  #pl>.ptop,#pl>.segs,#pl>.pwrap{max-width:780px}
+  .plist{display:block;order:-1;margin-top:12px}
+  .plist .plh{display:none}
+  .plist ul{display:flex;overflow-x:auto;padding-bottom:6px}
+  .plist li{flex:none}
+  .pli{width:auto;min-width:200px;max-width:260px}
+  .pli .pm small{display:none}
+  .pmedia[data-open] .mbody{display:block}
+  .mtoggle{display:none}
+}
+/* tablet landscape: photo and exercise list on the left, controls on the right, filling the screen */
+@media (min-width:900px){
+  #pl{overflow:hidden}
+  #pl>.ptop,#pl>.segs,#pl>.pwrap{max-width:1580px}
+  #pl>.pwrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(360px,.9fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"media ctl" "list ctl";gap:14px 24px;min-height:0;padding:14px 0 max(14px,env(safe-area-inset-bottom))}
+  .pmedia{grid-area:media;margin:0}
+  .plist{grid-area:list;display:block;min-height:0;overflow-y:auto}
+  .pctl{grid-area:ctl;min-height:0;overflow-y:auto}
+  .plist ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mtoggle{display:none}
+  .pmedia[data-open] .mbody{display:block;margin:0}
+  .mframes{aspect-ratio:auto;height:clamp(240px,37vh,540px);background:#0d0d10}
+  .mfig figcaption{font-size:14px}
+  .pctl .pbody{overflow-y:auto;padding-top:0}
+  .pctl .pfoot{position:static;padding-bottom:0;background:none}
+}
+/* very wide screens (desktop, big tablets in landscape): exercises | photo | controls */
+@media (min-width:1400px){
+  #pl>.pwrap{grid-template-columns:minmax(240px,280px) minmax(0,1fr) minmax(380px,460px);grid-template-rows:minmax(0,1fr);grid-template-areas:"list media ctl"}
+  .plist ul{grid-template-columns:1fr}
+  .pmedia{min-height:0;display:flex;flex-direction:column;overflow-y:auto}
+  .pmedia[data-open] .mbody{display:flex;flex-direction:column;flex:1;min-height:0}
+  .mfig{flex:1;display:flex;flex-direction:column;min-height:0}
+  .mframes{flex:1;height:auto;min-height:300px}
+}
+
+/* narrow and portrait screens: the main buttons stay pinned to the bottom while the rest scrolls */
+@media (max-width:899px){
+  #pl{padding-bottom:0}
+  .pfoot{position:sticky;bottom:0;z-index:2;background:#060608;padding:8px 0 max(16px,env(safe-area-inset-bottom))}
+}

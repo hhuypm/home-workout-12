@@ -7,6 +7,7 @@ import { ic, arc, miniRing } from "./icons.js";
 import * as N from "./notify.js";
 import * as A from "./audio.js";
 import * as Sync from "./sync.js";
+import { mediaFor, allImageUrls } from "./media.js";
 import { fmtCode } from "./sync-model.js";
 
 let st = store.load();
@@ -302,7 +303,7 @@ function openPlay(kind) {
   const d = dayInfo(selW, selI), sp = steps(kind, d.k, selW), sv = setsOf(kind, d.key);
   const found = sp.findIndex(x => x.q >= (sv[x.j] || 0));
   const review = found < 0;                    // already finished: show the summary, never touch the saved sets
-  P = { kind, k: d.k, w: selW, key: d.key, sp, idx: review ? sp.length : found, review, timed: true, finished: review, acc: timeOf(d.key, kind) * 1000, seg: review ? null : Date.now(), ex: exFor(kind, d.k), c: kind === "mini" ? "var(--mini)" : S[d.k].c, t0: Date.now(), title: kind === "mini" ? "Mini Circuit" : S[d.k].full };
+  P = { kind, k: d.k, w: selW, key: d.key, sp, idx: review ? sp.length : found, review, skipped: new Set(), timed: true, finished: review, acc: timeOf(d.key, kind) * 1000, seg: review ? null : Date.now(), ex: exFor(kind, d.k), c: kind === "mini" ? "var(--mini)" : S[d.k].c, t0: Date.now(), title: kind === "mini" ? "Mini Circuit" : S[d.k].full };
   A.wake(); openShell(); review ? showDone() : showWork();
 }
 function openWalk() {
@@ -348,6 +349,26 @@ function nextCard(i, rest) {
   const e = P.ex[x.j];
   return `<div class="next an"><div><small>Tiếp theo · set ${x.q + 1}/${x.n}</small><b>${e.n}</b></div>${rest ? `<span class="rb">${ic("timer")}Rest ${mmss(rest)}</span>` : rest === 0 ? `<span class="rb">No rest</span>` : ""}</div>`;
 }
+/* ---- exercise photo + exercise list (shown beside the controls on wide screens) ---- */
+const MEDIA_PREF = "player12-media";
+const mediaOpen = () => { try { return localStorage.getItem(MEDIA_PREF) === "open"; } catch (e) { return false; } };
+function mediaPanel(e) {
+  const m = mediaFor(e.n), mode = RM() ? "0" : "auto", open = mediaOpen();
+  const pick = (f, label) => `<button type="button" class="press" data-pa="mframe" data-f="${f}" aria-pressed="${mode === f}">${label}</button>`;
+  const body = m
+    ? `<figure class="mfig" data-mode="${mode}"><div class="mframes"><img class="f0" src="${m.frames[0]}" alt="${e.n}: tư thế bắt đầu" decoding="async"><img class="f1" src="${m.frames[1]}" alt="${e.n}: tư thế kết thúc" decoding="async"></div><figcaption>${m.approx ? "Hình của bài gần giống nhất, chỉ để xem tư thế." : "Hình tham khảo tư thế."} Dụng cụ trong hình có thể khác dụng cụ của bạn.</figcaption></figure><div class="mctl" role="group" aria-label="Chọn tư thế">${pick("auto", "Tự chuyển")}${pick("0", "Bắt đầu")}${pick("1", "Kết thúc")}</div>`
+    : `<div class="mnone">${ic("dumbbell")}<p><b>${e.n}</b></p><p>Chưa có hình cho bài này. Dùng nút Xem hình hoặc Video mẫu để xem cách làm.</p></div>`;
+  return `<section class="pmedia an" data-open="${open ? 1 : 0}"><button type="button" class="mtoggle press" data-pa="mtoggle" aria-expanded="${open}" aria-controls="mbody">${ic("target")}<span>Hình hướng dẫn</span><i>${open ? "Ẩn" : "Xem"}</i></button><div class="mbody" id="mbody">${body}</div></section>`;
+}
+function listPanel(curJ) {
+  const sv = setsOf(P.kind, P.key);
+  const items = P.ex.map((e, j) => {
+    const n = (P.sp.find(x => x.j === j) || {}).n || 1, done = Math.min(sv[j] || 0, n), fin = done >= n;
+    const dots = Array.from({ length: n }, (_, i) => `<i class="${i < done ? "on" : ""}"></i>`).join("");
+    return `<li><button type="button" class="pli${j === curJ ? " cur" : ""}${fin ? " fin" : ""}" data-pa="jump" data-j="${j}"${fin ? " disabled" : ""}${j === curJ ? ' aria-current="step"' : ""}><span class="pn">${fin ? ic("check") : j + 1}</span><span class="pm"><b>${e.n}</b><small>${e.ss ? e.ss + ", " : ""}${n} set, ${e.r.split(" · ")[0]}</small></span><span class="pdots" aria-hidden="true">${dots}</span></button></li>`;
+  }).join("");
+  return `<aside class="plist an" aria-label="Danh sách bài"><p class="plh">Bài hôm nay</p><ul>${items}</ul></aside>`;
+}
 function showWork() {
   pl.classList.remove("rest"); P.busy = false;
   const x = P.sp[P.idx], e = P.ex[x.j], exNo = x.j + 1;
@@ -357,30 +378,32 @@ function showWork() {
   else if (e.dur) mid = `<div class="dtimer an"><b id="wt">${mmss(e.dur)}</b><button class="press" data-pa="wtime">${ic("play")}Đếm ${e.dur}s</button></div>`;
   const dots = x.n > 1 ? `<div class="dots">${Array.from({ length: x.n }, (_, i) => `<i class="${i < x.q ? "on" : i === x.q ? "cur" : ""}"></i>`).join("")}</div>` : "";
   const nav = `<div class="prow an"><button class="gbtn press" data-pa="back" ${P.idx ? "" : "disabled"}>${ic("back")}Set trước</button><button class="gbtn press" data-pa="skip">Bỏ qua${ic("skip")}</button></div>`;
-  pl.innerHTML = top() + `<div class="pbody"><div class="pk an"><span class="tag">Bài ${exNo}/${P.ex.length}</span>${e.ss ? `<span class="tag c">${ic("link")}${e.ss} · ${ssTxt}</span>` : ""}${e.emom ? `<span class="tag c">${ic("timer")}EMOM ${e.emom}'</span>` : ""}${e.pk ? `<span class="tag">Level ${e.lv + 1}/${e.lvN}</span>` : ""}</div>
+  pl.innerHTML = top() + `<div class="pwrap">${listPanel(x.j)}${mediaPanel(e)}<div class="pctl"><div class="pbody"><div class="pk an"><span class="tag">Bài ${exNo}/${P.ex.length}</span>${e.ss ? `<span class="tag c">${ic("link")}${e.ss} · ${ssTxt}</span>` : ""}${e.emom ? `<span class="tag c">${ic("timer")}EMOM ${e.emom}'</span>` : ""}${e.pk ? `<span class="tag">Level ${e.lv + 1}/${e.lvN}</span>` : ""}</div>
  <div class="pname an">${e.n}</div>
  ${e.emom ? "" : `<div class="setbox an"><div class="setn"><b>${x.q + 1}</b><span>/${x.n}</span></div><div class="setl"><small>Set</small>${dots}</div></div>`}
  <div class="reps an"><div class="rv">${ic("target")}<div><span>${e.r.split(" · ")[0]}</span>${e.r.includes(" · ") ? `<small>${e.r.split(" · ").slice(1).join(" · ")}</small>` : ""}</div></div>${e.tip ? `<div class="tip">${ic("bulb")}<span>${e.tip}</span></div>` : ""}${e.n.startsWith("Weigh-in") ? "" : howLinks(e.n)}</div>${e.pk && x.q === x.n - 1 ? `<button class="hitb press an${(st.hit[e.pk] || []).includes(P.key) ? " on" : ""}" data-pa="hit">${ic("check")}<span>Mọi set đều đạt top reps<small>Bấm khi bạn làm được mức reps cao nhất ở tất cả các set hôm nay. Đạt 2 buổi là lên level.</small></span></button>` : ""}${mid}</div>
  <div class="pfoot">${nextCard(P.idx + 1, x.rest)}
- ${e.emom ? `<button class="pbig press an" data-pa="emom" id="emb">${ic("play")}Bắt đầu EMOM ${e.emom}'</button>` : `<button class="pbig press an" data-pa="done">${ic("check")}Xong set</button>`}${nav}</div>`;
+ ${e.emom ? `<button class="pbig press an" data-pa="emom" id="emb">${ic("play")}Bắt đầu EMOM ${e.emom}'</button>` : `<button class="pbig press an" data-pa="done">${ic("check")}Xong set</button>`}${nav}</div></div></div>`;
   if (e.emom) { $("rl").textContent = "Minute 1 · Pull-Up"; setRing(60, 60, true); }
   say(`${e.n}, set ${x.q + 1} trên ${x.n}`);
   anim();
 }
 function markDone() { const x = P.sp[P.idx], sv = setsOf(P.kind, P.key); sv[x.j] = Math.max(sv[x.j] || 0, x.q + 1); save(); }
 function advance(withRest) {
-  const x = P.sp[P.idx]; P.idx++; T = null;
-  if (P.idx >= P.sp.length) return showDone();
+  const x = P.sp[P.idx]; T = null;
+  const n = L.nextStep(P.sp, setsOf(P.kind, P.key), P.idx, P.skipped);   // next set still to do, whatever order you worked in
+  if (n < 0 || n === P.idx) { P.idx = P.sp.length; return showDone(); }
+  P.idx = n;
   if (withRest && x.rest) showRest(x.rest, x); else showWork();
 }
 function showRest(sec, prev) {
   pl.classList.add("rest");
   const pe = prev ? P.ex[prev.j] : null;
-  pl.innerHTML = top() + `<div class="pbody" style="text-align:center">${pe ? `<div class="rest-h an"><span class="tag c">${ic("check")}Xong set ${prev.q + 1}/${prev.n} · ${pe.n.length > 22 ? pe.n.slice(0, 21) + "…" : pe.n}</span></div>` : ""}<div class="an" id="ringw">${ringHTML()}</div>
+  const nx = P.sp[P.idx], nxe = P.ex[nx.j];
+  pl.innerHTML = top() + `<div class="pwrap">${listPanel(nx.j)}${mediaPanel(nxe)}<div class="pctl"><div class="pbody" style="text-align:center">${pe ? `<div class="rest-h an"><span class="tag c">${ic("check")}Xong set ${prev.q + 1}/${prev.n} · ${pe.n.length > 22 ? pe.n.slice(0, 21) + "…" : pe.n}</span></div>` : ""}<div class="an" id="ringw">${ringHTML()}</div>
  <div class="ctrl an"><button class="cb press" data-pa="m15" aria-label="Bớt 15 giây">−15</button><div class="cbl"><button class="cb main press" data-pa="pause" id="pz" aria-label="Tạm dừng">${ic("pause")}</button><span id="pzl">Tạm dừng</span></div><button class="cb press" data-pa="p15" aria-label="Thêm 15 giây">+15</button></div></div>
- <div class="pfoot">${nextCard(P.idx)}<button class="pbig press an" data-pa="go">Vào set luôn${ic("skip")}</button></div>`;
+ <div class="pfoot">${nextCard(P.idx)}<button class="pbig press an" data-pa="go">Vào set luôn${ic("skip")}</button></div></div></div>`;
   say("Nghỉ " + mmss(sec)); $("rl").textContent = "rest";
-  const nx = P.sp[P.idx], nxe = nx && P.ex[nx.j];
   startT(sec, () => showWork(), l => setRing(l, T ? T.dur : sec, l === sec), N.textFor("rest", { next: nxe && nxe.n, q: nx && nx.q, n: nx && nx.n }));
   anim();
 }
@@ -426,6 +449,14 @@ pl.addEventListener("click", e => {
   if (!b || !P || b.disabled) return;
   const a = b.dataset.pa;
   if (a === "tclock") { if (P.seg) { pauseClock(); say("Đã tạm dừng đồng hồ tập"); } else { resumeClock(); say("Đồng hồ tập đang chạy"); } return; }
+  if (a === "mtoggle") { const sec = b.closest(".pmedia"), open = sec.dataset.open !== "1"; sec.dataset.open = open ? "1" : "0"; b.setAttribute("aria-expanded", open); b.querySelector("i").textContent = open ? "Ẩn" : "Xem"; try { localStorage.setItem(MEDIA_PREF, open ? "open" : "closed"); } catch (er) {} return; }
+  if (a === "mframe") { const fig = pl.querySelector(".mfig"); if (fig) fig.dataset.mode = b.dataset.f; pl.querySelectorAll('[data-pa="mframe"]').forEach(x => x.setAttribute("aria-pressed", x === b)); return; }
+  if (a === "jump") {
+    const j = +b.dataset.j, i = L.stepOfExercise(P.sp, setsOf(P.kind, P.key), j);
+    if (i < 0 || i === P.idx) return;
+    P.sp.forEach((x, k) => { if (x.j === j) P.skipped.delete(k); });
+    P.idx = i; T = null; return showWork();
+  }
   if (a !== "close" && P.timed && !P.seg && !P.finished) resumeClock();      // any action: you are back at it
   if (a === "close") { if (P.kind === "walk" && P.started) logWalk(); return closePlay(); }
   if (a === "done") {
@@ -444,8 +475,8 @@ pl.addEventListener("click", e => {
     if (i < 0 && ready(pk)) { beep(880, .12); setTimeout(() => beep(1175, .2), 130); }
     return;
   }
-  if (a === "skip") return advance(false);
-  if (a === "back") { P.idx = Math.max(0, P.idx - 1); const x = P.sp[P.idx], sv = setsOf(P.kind, P.key); sv[x.j] = Math.min(sv[x.j] || 0, x.q); save(); T = null; return showWork(); }
+  if (a === "skip") { P.skipped.add(P.idx); return advance(false); }
+  if (a === "back") { P.idx = Math.max(0, P.idx - 1); P.skipped.delete(P.idx); const x = P.sp[P.idx], sv = setsOf(P.kind, P.key); sv[x.j] = Math.min(sv[x.j] || 0, x.q); save(); T = null; return showWork(); }
   if (a === "go") { T = null; return showWork(); }
   if (a === "m15" && T) { T.end = Math.max(Date.now() + 1000, T.end - 15000); if (T.paused) T.rem = Math.max(1000, T.rem - 15000); T.left = -1; if (T.paused) setRing(Math.ceil(T.rem / 1000), T.dur); return; }
   if (a === "p15" && T) { T.end += 15000; T.dur += 15; if (T.paused) { T.rem += 15000; setRing(Math.ceil(T.rem / 1000), T.dur); } T.left = -1; return; }
@@ -696,7 +727,7 @@ if (swOk) {
     });
   }).catch(() => {});
   /* Once the service worker is active the whole app is stored on the device. */
-  navigator.serviceWorker.ready.then(() => { const o = $("offline"); o.innerHTML = ic("check") + "<span>App đã lưu vào máy: mở và ghi tiến độ được cả khi không có mạng.</span>"; o.hidden = false; }).catch(() => {});
+  navigator.serviceWorker.ready.then(r => { (window.requestIdleCallback || (f => setTimeout(f, 3000)))(() => r.active && r.active.postMessage({ type: "warm", urls: allImageUrls() })); const o = $("offline"); o.innerHTML = ic("check") + "<span>App đã lưu vào máy: mở và ghi tiến độ được cả khi không có mạng.</span>"; o.hidden = false; }).catch(() => {});
 }
 /* Ask the browser not to evict saved data when storage runs low. */
 try { navigator.storage?.persist?.(); } catch (e) {}

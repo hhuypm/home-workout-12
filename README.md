@@ -43,6 +43,8 @@ public/
   js/store.js           lưu / đọc dữ liệu, sao lưu, khôi phục
   js/app.js             giao diện + player
   js/icons.js           icon SVG
+  js/media.js           ghép tên bài với hình hướng dẫn
+  exercises/            hình hướng dẫn (2 tư thế mỗi bài, WebP, lưu sẵn để dùng offline)
   sw.js                 offline
   manifest.webmanifest  thông tin cài app
 test/logic.test.js      test cho logic.js và store.js
@@ -67,3 +69,11 @@ Lưu trong `localStorage`, key `player12`:
 | `time` | `{ngày: {lift, mini}}` giây đã tập trong player, dừng hoặc thoát thì lưu, quay lại thì đếm tiếp |
 
 Dữ liệu chỉ nằm trên một máy, một trình duyệt. Tab Tiến độ có nút **Xuất sao lưu** / **Khôi phục** (file JSON) để giữ bản dự phòng hoặc chuyển sang máy khác.
+
+## Hình hướng dẫn
+
+Màn tập hiển thị hình hai tư thế (đầu và cuối) của từng bài, cạnh danh sách bài và khu điều khiển trên màn lớn (iPad, máy tính); trên điện thoại hình gập lại để nút "Xong set" luôn trong tầm tay.
+
+Hình lấy từ [free-exercise-db](https://github.com/yuhonas/free-exercise-db), được người duy trì công bố là phạm vi công cộng (Unlicense). Dự án này không kiểm chứng được người chụp gốc của từng hình. Nếu cần chắc chắn về bản quyền, thay thư mục `public/exercises/` bằng hình riêng cùng tên tệp (`<mã bài>/0.webp`, `1.webp`).
+
+Bài ở level cao thường không có hình riêng nên hiện hình của bài cơ bản gần nhất, có ghi chú. Các bài chưa có hình (dead hang, hollow hold, mobility, Nordic curl) hiện thông báo thay vì hình; bảng ghép nằm ở `public/js/media.js` và được test kiểm tra.

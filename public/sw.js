@@ -1,5 +1,5 @@
 /* Offline support: precache the app shell, then serve cache-first and refresh in the background. */
-const CACHE = "workout12-v9";
+const CACHE = "workout12-v10";
 const SHELL = [
   "./",
   "index.html",
@@ -13,6 +13,7 @@ const SHELL = [
   "js/audio.js",
   "js/sync.js",
   "js/sync-model.js",
+  "js/media.js",
   "js/icons.js",
   "fonts/inter-latin-opsz-normal.woff2",
   "fonts/inter-vietnamese-opsz-normal.woff2",
@@ -54,8 +55,18 @@ self.addEventListener("fetch", e => {
 const pending = new Map();
 const stop = id => { const p = pending.get(id); if (p) { clearTimeout(p.t); p.done(); pending.delete(id); } };
 
+/* The page lists the exercise photos; keep them on the device so they open offline. One at a time, only our own folder. */
+async function warm(urls) {
+  const cache = await caches.open(CACHE);
+  for (const u of urls.slice(0, 200)) {
+    if (typeof u !== "string" || !/^exercises\/[\w.-]+\/\d\.webp$/.test(u)) continue;
+    try { if (!(await cache.match(u))) { const r = await fetch(u); if (r.ok) await cache.put(u, r); } } catch (err) {}
+  }
+}
+
 self.addEventListener("message", e => {
   const d = e.data || {};
+  if (d.type === "warm" && Array.isArray(d.urls)) return e.waitUntil(warm(d.urls));
   if (d.type === "cancel") return stop(d.id);
   if (d.type !== "schedule" || !d.note) return;
   stop(d.id);

@@ -117,3 +117,18 @@ export function weekSummary(st, w) {
   const ok = { lifts: liftsDone >= GOALS.lifts, walk: walk >= walkNeed, mini: mini >= GOALS.miniDays };
   return { lifts, liftsDone, walk, walkTarget, walkNeed, mini, ok, met: Object.values(ok).filter(Boolean).length };
 }
+
+/* ---------- moving around inside a session ---------- */
+const todo = (sv, x) => x.q >= (sv[x.j] || 0);
+
+/** Next step still to do after step `from`; wraps to anything left behind; -1 when everything is done.
+ *  Steps in `skipped` (indices the user chose to skip) are left alone. If only `from` itself is left, that comes back. */
+export function nextStep(sp, sv, from, skipped = new Set()) {
+  const open = i => todo(sv, sp[i]) && !skipped.has(i);
+  for (let i = from + 1; i < sp.length; i++) if (open(i)) return i;
+  for (let i = 0; i <= from && i < sp.length; i++) if (open(i)) return i;
+  return -1;
+}
+
+/** First step still to do for exercise `j`, or -1 when that exercise is finished. */
+export const stepOfExercise = (sp, sv, j) => sp.findIndex(x => x.j === j && todo(sv, x));
