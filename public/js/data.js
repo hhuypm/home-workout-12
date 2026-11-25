@@ -8,39 +8,39 @@ export const WEEKS = 12;
 const E = (n, s, r, sec, o = {}) => Object.assign({ n, s, r, sec, dur: 0, ss: null, tip: "" }, o);
 
 export const S = {
-  push: { name: "Push", full: "Push Day", c: "var(--push)", g: "linear-gradient(150deg,#FF6B5E 0%,#EE3456 52%,#C81D55 100%)", deep: "#C81D46", ic: "dumbbell", dur: "55–60 phút", ex: [
+  push: { name: "Push", full: "Push Day", c: "var(--push)", g: "linear-gradient(150deg,#C25147 0%,#DB304F 52%,#C81D55 100%)", deep: "#C81D46", ic: "dumbbell", dur: "55–60 phút", ex: [
     E("Parallel Bar Dip", 5, "6–12 reps · last set AMRAP", 120, { tip: "Quá 12 reps thì làm weighted dip: kẹp kettlebell 8 kg giữa chân" }),
     E("Single-Arm Kettlebell Overhead Press (12 kg)", 4, "6–10 reps mỗi tay", 0, { ss: "SS1", tip: "Nặng quá thì dùng kettlebell 8 kg" }),
     E("Feet-Elevated Push-Up", 4, "10–20 reps", 90, { ss: "SS1" }),
     E("Single-Arm High-to-Low Cable Fly", 3, "12–15 reps mỗi tay", 60, { tip: "Đứng nghiêng cạnh xà. Last set: drop set" }),
     E("Dumbbell Lateral Raise (5 kg)", 4, "15–20 reps", 0, { ss: "SS2", tip: "Tempo: eccentric 3 giây" }),
     E("Rope Triceps Pushdown", 4, "12–15 reps", 60, { ss: "SS2", tip: "Last set: drop set" })] },
-  pull: { name: "Pull", full: "Pull Day + Core", c: "var(--pull)", g: "linear-gradient(150deg,#5B9DFF 0%,#3165EE 52%,#2443C4 100%)", deep: "#2450D0", ic: "dumbbell", dur: "55–60 phút", ex: [
+  pull: { name: "Pull", full: "Pull Day + Core", c: "var(--pull)", g: "linear-gradient(150deg,#4374BD 0%,#3165EE 52%,#2443C4 100%)", deep: "#2450D0", ic: "dumbbell", dur: "55–60 phút", ex: [
     E("Pull-Up", 5, "5–10 reps · last set AMRAP", 120, { tip: "Chưa được 5 reps: làm negative pull-up (hạ chậm 5s). Quá 10: weighted pull-up với kettlebell 8 kg" }),
     E("Half-Kneeling Single-Arm Lat Pulldown", 4, "10–12 reps mỗi tay", 0, { ss: "SS1", tip: "Kéo khuỷu tay về hông, pause 1s" }),
     E("Hanging Knee Raise", 4, "10–15 reps", 90, { ss: "SS1", tip: "Dễ quá thì chuyển sang Hanging Leg Raise" }),
     E("Single-Arm Kettlebell Row (12 kg)", 3, "12–15 reps mỗi tay", 60, { tip: "Pause 1s ở đỉnh" }),
     E("Rope Face Pull", 3, "15–20 reps", 0, { ss: "SS2" }),
     E("Dumbbell Biceps Curl (5 kg)", 4, "12–15 reps", 60, { ss: "SS2", tip: "Last set: rest-pause (rest 15s, làm tiếp, ×2)" })] },
-  legs: { name: "Legs", full: "Leg Day", c: "var(--legs)", g: "linear-gradient(150deg,#1FBF75 0%,#0E9C5E 52%,#07774A 100%)", deep: "#0A8050", ic: "legs", dur: "50–55 phút", ex: [
+  legs: { name: "Legs", full: "Leg Day", c: "var(--legs)", g: "linear-gradient(150deg,#158250 0%,#0C8651 52%,#07774A 100%)", deep: "#0A8050", ic: "legs", dur: "50–55 phút", ex: [
     E("Kettlebell Goblet Squat (12 kg)", 4, "15–20 reps", 90, { tip: "Tempo 3-1-1: eccentric 3s, pause 1s ở đáy" }),
     E("Dumbbell Bulgarian Split Squat (2 × 5 kg)", 4, "10–15 reps mỗi chân", 90, { tip: "Chân sau gác lên ghế" }),
     E("Single-Leg Kettlebell RDL (12 kg)", 3, "10–12 reps mỗi chân", 60, { tip: "Lưng thẳng, hip hinge: đẩy hông ra sau" }),
     E("Kettlebell Swing (12 kg)", 5, "20 reps", 45, { tip: "Lực từ hip hinge, không kéo bằng tay" }),
     E("Single-Leg Calf Raise", 4, "15–20 reps mỗi chân", 45, { tip: "Cầm kettlebell, pause 2s ở đỉnh" }),
     E("Side Plank", 3, "45s mỗi bên", 30, { dur: 45, tip: "Đếm 45s bên trái rồi bấm lại cho bên phải" })] },
-  upper: { name: "Upper", full: "Upper Body Accessory", c: "var(--upper)", g: "linear-gradient(150deg,#FF8A3D 0%,#EE6416 52%,#C9480B 100%)", deep: "#C2500E", ic: "dumbbell", dur: "40–45 phút", ex: [
+  upper: { name: "Upper", full: "Upper Body Accessory", c: "var(--upper)", g: "linear-gradient(150deg,#AD5E29 0%,#C35212 52%,#C9480B 100%)", deep: "#C2500E", ic: "dumbbell", dur: "40–45 phút", ex: [
     E("EMOM: Pull-Up / Dip", 1, "12 phút · mỗi phút ~50% max reps", 90, { emom: 12, tip: "Phút lẻ Pull-Up, phút chẵn Dip. Làm xong thì rest hết phút" }),
     E("Rope Straight-Arm Pulldown", 3, "12–15 reps", 60, { tip: "Tay gần thẳng, kéo từ trên đầu xuống đùi" }),
     E("Single-Arm Kettlebell Overhead Press (8 kg)", 3, "12–15 reps mỗi tay", 60),
     E("Dumbbell Hammer Curl (5 kg)", 3, "12–15 reps", 0, { ss: "SS1" }),
     E("Diamond Push-Up", 3, "AMRAP", 60, { ss: "SS1" }),
     E("Kettlebell Swing Finisher (12 kg)", 1, "50 reps, ít rest nhất", 0, { tip: "Finisher: ghi thời gian, lần sau nhanh hơn" })] },
-  stretch: { name: "Mobility", full: "Mobility + Weigh-in", c: "var(--stretch)", g: "linear-gradient(150deg,#F55FA0 0%,#DC3F86 52%,#B52A6C 100%)", deep: "#B8306F", ic: "stretch", dur: "20 phút", ex: [
+  stretch: { name: "Mobility", full: "Mobility + Weigh-in", c: "var(--stretch)", g: "linear-gradient(150deg,#BF4A7D 0%,#CA3A7B 52%,#B52A6C 100%)", deep: "#B8306F", ic: "stretch", dur: "20 phút", ex: [
     E("Full-Body Mobility & Stretching", 1, "15–20 phút", 0, { tip: "Hamstrings, hip flexors, ngực, vai" }),
     E("Dead Hang", 3, "30 giây", 30, { dur: 30 }),
     E("Weigh-in & Waist Measurement", 1, "buổi sáng", 0, { tip: "Ghi ở tab Tiến độ" })] },
-  rest: { name: "Rest Day", full: "Rest Day", c: "var(--walk)", g: "linear-gradient(150deg,#16B9AC 0%,#0C9890 52%,#0A737A 100%)", deep: "#087A78", ic: "walk", dur: "", ex: [] }
+  rest: { name: "Rest Day", full: "Rest Day", c: "var(--walk)", g: "linear-gradient(150deg,#0F8278 0%,#0A837C 52%,#0A737A 100%)", deep: "#087A78", ic: "walk", dur: "", ex: [] }
 };
 
 /** Daily mini circuit: 3 rounds. Push-Up is dropped on Push and Upper days. */

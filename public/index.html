@@ -18,7 +18,8 @@
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-<div class="app">
+<a class="skip" href="#main">Bỏ qua tới nội dung chính</a>
+<main class="app" id="main" tabindex="-1">
   <section class="view on" id="v-today"></section>
 
   <section class="view" id="v-week">
@@ -39,23 +40,24 @@
     <div class="card" style="margin-top:12px" id="lvCard"></div>
     <div class="pgrid">
       <div class="card" style="margin-top:12px">
-        <h3 class="ct">Từng tuần</h3>
+        <h2 class="ct">Từng tuần</h2>
         <p class="cs">Chấm: strength session xong. Thanh: phút incline walk so với target. Số cuối: số ngày làm Mini Circuit.</p>
         <div id="wrows"></div>
       </div>
       <div>
         <div class="card" style="margin-top:12px">
-          <h3 class="ct">Max Test</h3>
+          <h2 class="ct">Max Test</h2>
           <p class="cs">Test max reps tuần 1, test lại cuối tuần 12.</p>
           <table><thead><tr><th>Bài</th><th class="n">Tuần 1</th><th class="n">Tuần 12</th><th class="n">+/−</th></tr></thead><tbody id="tests"></tbody></table>
         </div>
         <div class="card" style="margin-top:12px">
-          <h3 class="ct">Cân nặng &amp; vòng eo</h3>
+          <h2 class="ct">Cân nặng &amp; vòng eo</h2>
           <p class="cs">Đo sáng Chủ nhật, trước khi ăn.</p>
-          <form class="form" id="bodyForm">
-            <label class="full">Ngày<input type="date" id="bDate"></label>
-            <label>Cân nặng (kg)<input type="number" step="0.1" id="bKg" inputmode="decimal" placeholder="–"></label>
-            <label>Vòng eo (cm)<input type="number" step="0.1" id="bWaist" inputmode="decimal" placeholder="–"></label>
+          <form class="form" id="bodyForm" novalidate>
+            <label class="full">Ngày<input type="date" id="bDate" name="body-date" autocomplete="off"></label>
+            <label>Cân nặng (kg)<input type="number" step="0.1" min="20" max="300" id="bKg" name="body-kg" autocomplete="off" inputmode="decimal" placeholder="Ví dụ 70,5"></label>
+            <label>Vòng eo (cm)<input type="number" step="0.1" min="30" max="250" id="bWaist" name="body-waist" autocomplete="off" inputmode="decimal" placeholder="Ví dụ 82"></label>
+            <p class="err" id="bErr" role="alert" hidden></p>
             <button class="save press" type="submit">Lưu lần đo</button>
           </form>
           <div class="chart" id="chartBox"><svg id="chart" aria-label="Biểu đồ cân nặng"></svg></div>
@@ -64,7 +66,7 @@
       </div>
     </div>
     <div class="card" style="margin-top:12px" id="dataCard">
-      <h3 class="ct">Dữ liệu &amp; sao lưu</h3>
+      <h2 class="ct">Dữ liệu &amp; sao lưu</h2>
       <p class="cs">Dữ liệu chỉ lưu trên máy này. Xuất file sao lưu mỗi tuần để không mất tiến độ khi đổi máy hoặc xoá trình duyệt.</p>
       <div class="dbtns">
         <button class="dbtn2 press" data-data="export" type="button"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>Xuất sao lưu</button>
@@ -79,19 +81,19 @@
     </div>
     <p class="foot">Home Workout 12 tuần · lộ trình tham khảo chung, không phải tư vấn y tế.</p>
   </section>
-</div>
+</main>
 
-<nav class="tabs" role="tablist" aria-label="Điều hướng">
-  <button data-v="today" role="tab" aria-selected="true"></button>
-  <button data-v="week" role="tab" aria-selected="false"></button>
-  <button data-v="road" role="tab" aria-selected="false"></button>
-  <button data-v="prog" role="tab" aria-selected="false"></button>
+<nav class="tabs" aria-label="Điều hướng chính">
+  <button data-v="today" type="button" aria-current="page"></button>
+  <button data-v="week" type="button"></button>
+  <button data-v="road" type="button"></button>
+  <button data-v="prog" type="button"></button>
 </nav>
+<div class="vh" id="live" role="status" aria-live="polite"></div>
 <div class="toast" id="toast" role="status"></div>
 <div class="sheet" id="sheet"></div>
 <div id="pl" role="dialog" aria-modal="true" aria-label="Chế độ tập"></div>
 
-<script src="vendor/gsap.min.js"></script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>
