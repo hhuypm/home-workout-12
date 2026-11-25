@@ -1,5 +1,5 @@
 /* Offline support: precache the app shell, then serve cache-first and refresh in the background. */
-const CACHE = "workout12-v6";
+const CACHE = "workout12-v7";
 const SHELL = [
   "./",
   "index.html",
@@ -11,6 +11,8 @@ const SHELL = [
   "js/store.js",
   "js/notify.js",
   "js/audio.js",
+  "js/sync.js",
+  "js/sync-model.js",
   "js/icons.js",
   "fonts/inter-latin-opsz-normal.woff2",
   "fonts/inter-vietnamese-opsz-normal.woff2",

@@ -6,6 +6,8 @@ import * as store from "./store.js";
 import { ic, arc, miniRing } from "./icons.js";
 import * as N from "./notify.js";
 import * as A from "./audio.js";
+import * as Sync from "./sync.js";
+import { fmtCode } from "./sync-model.js";
 
 let st = store.load();
 const save = () => store.save(st);
@@ -284,6 +286,7 @@ function closePlay() {
   setInert(false);
   renderToday(); renderProg();
   focusSel(back);
+  if (Sync.enabled()) Sync.syncNow();
 }
 const top = () => {
   const x = P.sp ? P.sp[Math.min(P.idx, P.sp.length - 1)] : null;
@@ -510,10 +513,11 @@ function dataAction(a) {
   if (a === "import") return $("impFile").click();
   if (a === "snd") { N.setSound(!N.soundOn()); armed = null; renderNotify(); if (N.soundOn()) chime(); return; }
   if (a === "vib") { N.setVib(!N.vibOn()); armed = null; renderNotify(); if (N.vibOn()) buzz(N.RING); return; }
+  if (a.startsWith("sync-")) return syncAction(a);
   if (a === "notif-ask") return N.ask().then(renderNotify);
   if (a === "notif-toggle") { N.setWanted(!N.wanted()); N.cancel(); return renderNotify(); }
   if (a === "notif-test") return N.show({ title: "Thông báo hoạt động", body: "Khi hết giờ rest, bạn sẽ thấy thông báo như thế này." }).then(ok => msg(ok ? "Đã gửi thông báo thử." : "Không gửi được thông báo thử. Kiểm tra quyền thông báo của app.", ok ? "ok" : "err"));
-  if (a === "wipe") return confirmSheet("Xoá toàn bộ dữ liệu?", "Mọi set, phút walk, level, Max Test và lần đo trên máy này sẽ mất. Nên xuất file sao lưu trước.", "Xoá hết").then(ok => { if (!ok) return; st = store.blank(); save(); renderAll(); msg("Đã xoá toàn bộ dữ liệu.", "ok"); });
+  if (a === "wipe") return confirmSheet("Xoá toàn bộ dữ liệu?", Sync.enabled() ? "Dữ liệu sẽ bị xoá trên máy này VÀ trên mọi thiết bị đang đồng bộ. Nên xuất file sao lưu trước." : "Mọi set, phút walk, level, Max Test và lần đo trên máy này sẽ mất. Nên xuất file sao lưu trước.", "Xoá hết").then(ok => { if (!ok) return; st = store.blank(); save(); renderAll(); msg("Đã xoá toàn bộ dữ liệu.", "ok"); });
 }
 async function importFile(f) {
   let next;
@@ -522,6 +526,49 @@ async function importFile(f) {
   if (!store.isEmpty(st) && !await confirmSheet("Thay dữ liệu hiện tại?", "Dữ liệu đang có trên máy này sẽ được thay bằng nội dung file sao lưu.", "Thay thế")) return;
   st = next; save(); renderAll(); msg("Đã khôi phục dữ liệu từ file.", "ok");
 }
+
+/* ================= multi-device sync ================= */
+const syncUI = { join: false, msg: "", err: false };
+const hhmm = t => new Date(t).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+const syncMsg = (text, err = false) => { syncUI.msg = text; syncUI.err = err; renderSync(); };
+function renderSync() {
+  const el = $("sync"), cfg = Sync.config(), s = Sync.status;
+  const msgHtml = `<p class="dmsg${syncUI.msg ? (syncUI.err ? " err" : " ok") : ""}" id="syncMsg" role="status">${syncUI.msg}</p>`;
+  const joinForm = `<form class="syncjoin" id="syncJoin" novalidate><label>Mã đồng bộ<input id="syncCode" name="sync-code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Dán hoặc gõ mã từ thiết bị kia"></label><button class="dbtn2 press" type="submit">Kết nối</button></form>`;
+  let body;
+  if (!cfg) body = `<p class="hint">Dùng chung dữ liệu giữa điện thoại, máy tính bảng và máy tính. Không cần tài khoản, chỉ cần một mã. Vẫn chạy offline, có mạng thì tự đồng bộ.</p><div class="dbtns"><button class="dbtn2 press" data-data="sync-start" type="button">Bật đồng bộ</button><button class="dbtn2 press" data-data="sync-joinform" type="button" aria-expanded="${syncUI.join}">Đã có mã</button></div>${syncUI.join ? joinForm : ""}`;
+  else {
+    const line = s.state === "syncing" ? "Đang đồng bộ…" : s.state === "offline" ? "Không có mạng, sẽ tự thử lại." : s.state === "error" ? "Lỗi: " + s.error : s.last ? "Đã đồng bộ lúc " + hhmm(s.last) + "." : "Đã bật.";
+    body = `<p class="hint" id="syncLine">${line}</p><p class="synccode" translate="no" aria-label="Mã đồng bộ">${fmtCode(cfg.code)}</p><p class="hint">Ai có mã này đều xem và sửa được dữ liệu của bạn. Giữ kín, và nhập mã trên thiết bị mới để kết nối.</p>
+      <div class="dbtns"><button class="dbtn2 press" data-data="sync-now" type="button">Đồng bộ ngay</button><button class="dbtn2 press" data-data="sync-copy" type="button">Sao chép mã</button><button class="dbtn2 press" data-data="sync-link" type="button" style="grid-column:1/-1">${navigator.share ? "Chia sẻ liên kết cho máy khác" : "Sao chép liên kết cho máy khác"}</button>${Sync.hasUndo() ? `<button class="dbtn2 press" data-data="sync-undo" type="button" style="grid-column:1/-1">Hoàn tác lần đồng bộ gần nhất</button>` : ""}<button class="dbtn2 press" data-data="sync-off" type="button">Ngắt kết nối máy này</button><button class="dbtn2 danger press" data-data="sync-wipe" type="button">Xoá dữ liệu trên mạng</button></div>`;
+  }
+  const keepFocus = document.activeElement && document.activeElement.id === "syncCode";
+  const typed = keepFocus ? document.activeElement.value : "";
+  el.innerHTML = `<h3 class="nh">Đồng bộ nhiều thiết bị</h3>${body}${msgHtml}`;
+  if (keepFocus) { const i = $("syncCode"); if (i) { i.value = typed; i.focus(); } }
+}
+const copy = async (text, ok) => { try { await navigator.clipboard.writeText(text); syncMsg(ok); } catch (e) { syncMsg("Không sao chép tự động được. Chọn mã ở trên rồi sao chép.", true); } };
+const joinLink = () => `${location.origin}${location.pathname}#join=${Sync.config().code}`;
+async function syncAction(a) {
+  const cfg = Sync.config();
+  if (a === "sync-start") { syncMsg("Đang bật…"); const r = await Sync.start(); return syncMsg(r.ok ? "Đã bật. Nhập mã này (hoặc mở liên kết kết nối) trên thiết bị khác." : r.error, !r.ok); }
+  if (a === "sync-joinform") { syncUI.join = !syncUI.join; syncUI.msg = ""; renderSync(); return syncUI.join && $("syncCode").focus(); }
+  if (a === "sync-now") { const r = await Sync.syncNow(); return syncMsg(r.ok ? (r.deferred ? "Sẽ đồng bộ sau khi bạn tập xong." : r.changed ? "Đã lấy dữ liệu mới từ thiết bị khác." : "Đã đồng bộ, không có gì mới.") : r.error, !r.ok); }
+  if (a === "sync-copy" && cfg) return copy(fmtCode(cfg.code), "Đã sao chép mã.");
+  if (a === "sync-link" && cfg) { if (navigator.share) { try { await navigator.share({ title: "Home Workout 12", text: "Mở liên kết này để kết nối đồng bộ", url: joinLink() }); } catch (e) {} return; } return copy(joinLink(), "Đã sao chép liên kết. Mở nó trên thiết bị kia."); }
+  if (a === "sync-off") { Sync.disconnect(); syncUI.join = false; return syncMsg("Đã ngắt kết nối. Dữ liệu vẫn còn trên máy này và trên mạng."); }
+  if (a === "sync-undo") { const prev = Sync.undoState(); if (!prev) return; if (!await confirmSheet("Hoàn tác lần đồng bộ gần nhất?", "Dữ liệu trên máy này quay về như trước lúc nhận dữ liệu từ thiết bị khác, và các thiết bị khác sẽ nhận bản này.", "Hoàn tác")) return; st = store.normalize(prev); save(); Sync.clearUndo(); renderAll(); return syncMsg("Đã hoàn tác."); }
+  if (a === "sync-wipe") { if (!await confirmSheet("Xoá dữ liệu trên mạng?", "Bản lưu trên mạng bị xoá và máy này ngắt kết nối. Dữ liệu trên máy này giữ nguyên. Thiết bị khác vẫn dùng mã này sẽ tạo lại bản trên mạng, nên hãy ngắt kết nối cả chúng.", "Xoá bản trên mạng")) return; const r = await Sync.wipeCloud(); return syncMsg(r.ok ? "Đã xoá bản trên mạng." : r.error, !r.ok); }
+}
+document.addEventListener("submit", async e => {
+  if (e.target.id !== "syncJoin") return;
+  e.preventDefault();
+  const typed = $("syncCode").value;          // read first: showing the message redraws the form
+  syncMsg("Đang kết nối…");
+  const r = await Sync.join(typed);
+  if (r.ok) syncUI.join = false;
+  syncMsg(r.ok ? "Đã kết nối. Dữ liệu từ nhóm đã được gộp vào máy này." : r.error, !r.ok);
+});
 
 /* ================= notifications setting ================= */
 function renderNotify() {
@@ -596,6 +643,7 @@ try { navigator.storage?.persist?.(); } catch (e) {}
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   N.clear();
+  if (Sync.enabled() && !P) Sync.syncNow();
   if (P) return void keepAwake(true);
   const p = L.position(new Date());
   if (iso(p.today) === iso(today)) return;
@@ -608,7 +656,31 @@ document.addEventListener("visibilitychange", () => {
 $("bDate").value = iso(dNow === 6 ? today : addD(today, 6 - dNow));
 try { new ResizeObserver(drawChart).observe($("chartBox")); } catch (e) {}
 A.listen();
-renderAll(); renderInstall(); renderNotify();
+Sync.init({
+  getState: () => st,
+  applyState: s => { st = store.normalize(s); store.saveQuiet(st); renderAll(); renderSync(); },
+  busy: () => !!P || $("sheet").classList.contains("on"),
+  onStatus: () => renderSync()
+}, store.setSaveHook);
+renderAll(); renderInstall(); renderSync(); renderNotify();
+if (Sync.enabled()) Sync.syncNow();
+addEventListener("online", () => { if (Sync.enabled()) Sync.syncNow(); });
+setInterval(() => { if (document.visibilityState === "visible" && Sync.enabled() && !P) Sync.syncNow(); }, 120000);
+/* a link like  …/#join=CODE  connects this device to an existing group (at start-up, or when the app is already open) */
+function joinFromHash() {
+  const jm = location.hash.match(/^#join=([0-9A-Za-z-]+)$/);
+  if (!jm || Sync.enabled()) return;
+  try { history.replaceState(null, "", "#prog"); } catch (e) {}
+  show("prog");
+  confirmSheet("Kết nối đồng bộ?", "Máy này sẽ gộp dữ liệu với nhóm đồng bộ của bạn. Dữ liệu đang có trên máy được giữ lại.", "Kết nối").then(async ok => {
+    if (!ok) return;
+    syncMsg("Đang kết nối…"); const r = await Sync.join(jm[1]);
+    if (r.ok) syncUI.join = false;
+    syncMsg(r.ok ? "Đã kết nối. Dữ liệu từ nhóm đã được gộp vào máy này." : r.error, !r.ok);
+  });
+}
+joinFromHash();
+addEventListener("hashchange", joinFromHash);
 const h0 = location.hash.slice(1);
 if (VIEWS.includes(h0) && h0 !== "today") show(h0);
 addEventListener("hashchange", () => { const v = location.hash.slice(1); if (VIEWS.includes(v)) show(v); });

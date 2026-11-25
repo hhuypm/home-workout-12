@@ -30,8 +30,19 @@ export function load() {
   return blank();
 }
 
+let saveHook = null;
+/** Something (the sync log) that wants to see every save. */
+export const setSaveHook = f => { saveHook = f; };
+
 /** Returns false when the browser refused the write (private mode, quota). */
 export function save(st) {
+  try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { return false; }
+  if (saveHook) { try { saveHook(st); } catch (e) {} }
+  return true;
+}
+
+/** Write without telling the sync log (used when the data just came from another device). */
+export function saveQuiet(st) {
   try { localStorage.setItem(KEY, JSON.stringify(st)); return true; } catch (e) { return false; }
 }
 

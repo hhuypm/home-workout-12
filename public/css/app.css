@@ -448,3 +448,9 @@ input[aria-invalid=true]{border-color:var(--push);box-shadow:0 0 0 1px var(--pus
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .btn{background:var(--c);color:#0B0B10}:root:not([data-theme=light]) .lvup.rd{background:var(--legs);color:#0B0B10}}
 :root[data-theme=dark] .btn{background:var(--c);color:#0B0B10}
 :root[data-theme=dark] .lvup.rd{background:var(--legs);color:#0B0B10}
+
+/* sync */
+.synccode{margin:10px 0 0;padding:14px;border-radius:12px;background:var(--surface2);font:700 20px/1.35 var(--font);letter-spacing:.06em;word-break:break-all;user-select:all;text-align:center}
+.syncjoin{display:grid;gap:10px;margin-top:12px}
+.syncjoin label{font-size:14px;color:var(--ink2);font-weight:500;display:grid;gap:5px}
+.syncjoin input{font:500 16px var(--font);min-height:48px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--ink);width:100%}
