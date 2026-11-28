@@ -1,5 +1,5 @@
 /* Offline support: precache the app shell, then serve cache-first and refresh in the background. */
-const CACHE = "workout12-v11";
+const CACHE = "workout12-v12";
 const SHELL = [
   "./",
   "index.html",
